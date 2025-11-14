@@ -5,6 +5,7 @@ pkg.ts
 config.yaml
 build
 node_modules/
+.vscode/
 packages/*/node_modules
 packages/*/dist
 packages/*/build
