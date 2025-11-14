@@ -14,3 +14,61 @@
 .filtersTitle {
   margin-bottom: var(--s3);
 }
+
+.quickFilters {
+  margin-top: var(--s3);
+  padding: var(--s3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--s1);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.quickFiltersGrid {
+  display: grid;
+  gap: var(--s3);
+}
+
+@media (min-width: 48rem) {
+  .quickFiltersGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.quickFiltersGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.quickFiltersLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: var(--s1);
+}
+
+.yearRangeInputs {
+  display: flex;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+
+.preview {
+  margin-top: var(--s3);
+  padding: var(--s2);
+  border-radius: var(--s1);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.previewStatus {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.previewStatusError {
+  color: var(--mm-dark-red);
+}
+
+.previewError {
+  margin-top: var(--s1);
+  color: var(--mm-dark-red);
+  font-size: 0.85rem;
+}

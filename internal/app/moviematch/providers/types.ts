@@ -53,4 +53,8 @@ export interface MovieMatchProvider {
   getMedia(options: {
     filters?: Filter[];
   }): Promise<Media[]>;
+
+  getMediaCount(options: {
+    filters?: Filter[];
+  }): Promise<number>;
 }

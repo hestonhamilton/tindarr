@@ -11,6 +11,9 @@ interface TextInputProps {
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
   testHandle?: string;
+  type?: React.InputHTMLAttributes<HTMLInputElement>["type"];
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  placeholder?: string;
 }
 
 export const TextInput = ({
@@ -22,13 +25,17 @@ export const TextInput = ({
   onBlur,
   paddingTop,
   testHandle,
+  type,
+  inputMode,
+  placeholder,
 }: TextInputProps) => (
   <input
     className={`${styles.textInput} ${invalid ? styles.invalid : ""}`}
     style={{
       ...(paddingTop ? { marginTop: `var(--${paddingTop})` } : {}),
     }}
-    type="text"
+    type={type ?? "text"}
+    inputMode={inputMode}
     name={name}
     id={`${name}-text-input`}
     value={value}
@@ -36,6 +43,7 @@ export const TextInput = ({
     autoCorrect="off"
     onChange={onChange}
     onBlur={onBlur}
+    placeholder={placeholder}
     data-test-handle={testHandle ?? `${name}-text-input`}
   />
 );

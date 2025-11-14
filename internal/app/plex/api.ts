@@ -204,18 +204,52 @@ export class PlexApi {
 
   getLibraryItems(
     key: string,
-    { filters }: { filters?: Record<string, string> } = {},
+    {
+      filters,
+      start,
+      size,
+    }: {
+      filters?: Record<string, string>;
+      start?: number;
+      size?: number;
+    } = {},
   ): Promise<LibraryItems> {
+    const searchParams: Record<string, string> = { ...(filters ?? {}) };
+
+    if (typeof start === "number") {
+      searchParams["X-Plex-Container-Start"] = String(start);
+    }
+
+    if (typeof size === "number") {
+      searchParams["X-Plex-Container-Size"] = String(size);
+    }
+
     return this.fetch<LibraryItems>(
       `/library/sections/${key}/all`,
       {
-        searchParams: filters,
+        searchParams,
       },
     );
   }
 
   async getLibraryItemDetails(key: string) {
     return await this.fetch(key);
+  }
+
+  async getLibraryItemsCount(
+    key: string,
+    { filters }: { filters?: Record<string, string> } = {},
+  ): Promise<number> {
+    const response = await this.getLibraryItems(
+      key,
+      {
+        filters,
+        start: 0,
+        size: 0,
+      },
+    );
+
+    return response.size ?? 0;
   }
 
   async transcodePhoto(

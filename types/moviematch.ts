@@ -41,7 +41,8 @@ export type ServerMessage =
   | { type: "setLocale"; payload: Locale }
   | { type: "setup"; payload: Config }
   | { type: "requestFilters" }
-  | { type: "requestFilterValues"; payload: FilterValueRequest };
+  | { type: "requestFilterValues"; payload: FilterValueRequest }
+  | { type: "previewFilters"; payload: PreviewFiltersRequest };
 
 // Messages intended for the UI
 export type ClientMessage =
@@ -68,6 +69,14 @@ export type ClientMessage =
     payload: { request: FilterValueRequest; values: FilterValue[] };
   }
   | { type: "requestFilterValuesError" }
+  | {
+    type: "previewFiltersSuccess";
+    payload: PreviewFiltersResponse;
+  }
+  | {
+    type: "previewFiltersError";
+    payload: { message?: string };
+  }
   | { type: "userJoinedRoom"; payload: UserProgress }
   | { type: "userLeftRoom"; payload: User }
   | { type: "userProgress"; payload: UserProgress };
@@ -255,6 +264,7 @@ export interface Filters {
     type: string;
     libraryTypes: LibraryType[];
   }>;
+  libraries?: Library[];
 
   // e.g. { integer: [{ key: '=', title: 'is' }, { key: '!=', title: 'is not' }] }
   // Note, the meanings of certain keys (e.g. '=') can be different depending on the type
@@ -274,6 +284,14 @@ export interface FilterValue {
 
 export interface FilterValueRequest {
   key: string;
+}
+
+export interface PreviewFiltersRequest {
+  filters?: Filter[];
+}
+
+export interface PreviewFiltersResponse {
+  count: number;
 }
 
 export interface UserProgress {

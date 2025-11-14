@@ -9,6 +9,7 @@ import {
   Locale,
   Login,
   LoginError,
+  PreviewFiltersRequest,
   Rate,
   ServerMessage,
   User,
@@ -119,6 +120,9 @@ export class Client {
                 break;
               case "requestFilterValues":
                 await this.handleRequestFilterValues(message.payload);
+                break;
+              case "previewFilters":
+                await this.handlePreviewFilters(message.payload);
                 break;
               default:
                 log.info(`Unhandled message: ${messageText}`);
@@ -479,6 +483,38 @@ export class Client {
     } else {
       this.sendMessage({
         type: "requestFilterValuesError",
+      });
+    }
+  }
+
+  async handlePreviewFilters(request: PreviewFiltersRequest) {
+    if (!this.ctx.providers.length) {
+      this.sendMessage({
+        type: "previewFiltersError",
+        payload: { message: "No providers available." },
+      });
+      return;
+    }
+
+    try {
+      const counts = await Promise.all(
+        this.ctx.providers.map((provider) =>
+          provider.getMediaCount({ filters: request.filters })
+        ),
+      );
+
+      const total = counts.reduce((acc, count) => acc + count, 0);
+
+      this.sendMessage({
+        type: "previewFiltersSuccess",
+        payload: { count: total },
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      log.error(`Failed to preview filters: ${errorMessage}`);
+      this.sendMessage({
+        type: "previewFiltersError",
+        payload: { message: errorMessage || "Unable to preview filters." },
       });
     }
   }

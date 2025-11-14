@@ -25,6 +25,18 @@ try {
 
     assert(!!filters);
   });
+
+  Deno.test("providers -> plex -> getMediaCount", async () => {
+    const provider = createProvider("0", {
+      url: TEST_PLEX_URL!,
+      token: TEST_PLEX_TOKEN!,
+      libraryTypeFilter: ["movie"],
+    });
+
+    const count = await provider.getMediaCount({});
+
+    assert(typeof count === "number" && count >= 0);
+  });
 } catch (err) {
   console.error(err);
 }

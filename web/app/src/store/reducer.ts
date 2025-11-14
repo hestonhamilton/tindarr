@@ -118,19 +118,54 @@ export const reducer: Reducer<Store, Actions> = (
       return { ...state, translations: action.payload };
     }
     case "requestFiltersSuccess": {
+      const nextCreateRoom = state.createRoom ?? {};
       return {
         ...state,
-        createRoom: { ...state.createRoom!, availableFilters: action.payload },
+        createRoom: { ...nextCreateRoom, availableFilters: action.payload },
       };
     }
     case "requestFilterValuesSuccess": {
+      const nextCreateRoom = state.createRoom ?? {};
       return {
         ...state,
         createRoom: {
-          ...state.createRoom!,
+          ...nextCreateRoom,
           filterValues: {
-            ...state.createRoom?.filterValues,
+            ...(nextCreateRoom.filterValues ?? {}),
             [action.payload.request.key]: action.payload.values,
+          },
+        },
+      };
+    }
+    case "previewFilters": {
+      const nextCreateRoom = state.createRoom ?? {};
+      return {
+        ...state,
+        createRoom: {
+          ...nextCreateRoom,
+          filterPreview: { status: "loading" },
+        },
+      };
+    }
+    case "previewFiltersSuccess": {
+      const nextCreateRoom = state.createRoom ?? {};
+      return {
+        ...state,
+        createRoom: {
+          ...nextCreateRoom,
+          filterPreview: { status: "success", count: action.payload.count },
+        },
+      };
+    }
+    case "previewFiltersError": {
+      const nextCreateRoom = state.createRoom ?? {};
+      return {
+        ...state,
+        createRoom: {
+          ...nextCreateRoom,
+          filterPreview: {
+            status: "error",
+            message: action.payload.message,
           },
         },
       };

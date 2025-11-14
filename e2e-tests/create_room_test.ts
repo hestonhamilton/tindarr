@@ -41,6 +41,10 @@ browserTest(
     await page.waitForSelector(textInputSelector("roomName"));
     await page.type(textInputSelector("roomName"), "Filters-" + Date.now());
 
+    await page.waitForSelector(autosuggestInputSelector("libraries"));
+    await page.type(textInputSelector("releaseYearFrom"), "1990");
+    await page.type(textInputSelector("releaseYearTo"), "1995");
+
     await page.waitForSelector(btnSelector("filter-add"));
     await page.click(btnSelector("filter-add"));
 

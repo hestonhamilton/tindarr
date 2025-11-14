@@ -50,6 +50,11 @@ export interface Store {
   createRoom?: {
     availableFilters?: Filters;
     filterValues?: Record<string, FilterValue[]>;
+    filterPreview?: {
+      status: "idle" | "loading" | "success" | "error";
+      count?: number;
+      message?: string;
+    };
   };
   room?: {
     name: string;

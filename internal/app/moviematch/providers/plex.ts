@@ -41,6 +41,27 @@ export const filtersToPlexQueryString = (
   return queryString;
 };
 
+export const filterLibraries = (
+  libraries: Library[],
+  filters?: Filter[],
+): Library[] => {
+  if (!filters?.length) {
+    return libraries;
+  }
+
+  const libraryFilter = filters.find((filter) => filter.key === "library");
+
+  if (!libraryFilter || !libraryFilter.value.length) {
+    return libraries;
+  }
+
+  const allowed = new Set(libraryFilter.value);
+
+  return libraries.filter((library) =>
+    allowed.has(library.key) || allowed.has(library.title)
+  );
+};
+
 export const createProvider = (
   id: string,
   providerOptions: PlexProviderConfig,
@@ -126,6 +147,7 @@ export const createProvider = (
       return {
         filters: [...filters.values()],
         filterTypes,
+        libraries: await getLibraries(),
       };
     },
     getFilterValues: async (key: string) => {
@@ -182,7 +204,7 @@ export const createProvider = (
         filters,
       );
 
-      const libraries: Library[] = await getLibraries();
+      const libraries = filterLibraries(await getLibraries(), filters);
 
       const media: Media[] = [];
 
@@ -219,6 +241,24 @@ export const createProvider = (
       }
 
       return media;
+    },
+    getMediaCount: async ({ filters }) => {
+      const filterParams: Record<string, string> = filtersToPlexQueryString(
+        filters,
+      );
+
+      const libraries = filterLibraries(await getLibraries(), filters);
+
+      let count = 0;
+
+      for (const library of libraries) {
+        count += await api.getLibraryItemsCount(
+          library.key,
+          { filters: filterParams },
+        );
+      }
+
+      return count;
     },
   };
 };

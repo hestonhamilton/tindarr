@@ -23,6 +23,15 @@ As many people as you want connect to your MovieMatch server and get a list of s
 
 If two (or more) people swipe right on the same movie, it'll show up in everyone's matches. The movies that the most people swiped right on will show up first.
 
+### Filter the queue before creating a room
+
+On the Create Room screen you can now shape the queue before anyone joins:
+
+- Pick one or more Plex movie libraries, specific genres, or collections via the Quick Filters panel.
+- Narrow the release window with from/to year inputs.
+- Add any additional advanced constraints using the existing filter builder.
+- MovieMatch previews the number of titles that match your current filter set and blocks room creation if the combination would yield zero results, so you can adjust before inviting people in.
+
 ## Getting started
 
 `docker run -it -e PLEX_URL=<Plex URL> -e PLEX_TOKEN=<Your Token> -p 8000:8000 --pull always lukechannings/moviematch:latest`

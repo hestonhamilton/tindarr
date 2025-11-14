@@ -6,6 +6,7 @@ import type {
   JoinRoomRequest,
   Locale,
   Login,
+  PreviewFiltersRequest,
   Rate,
   ServerMessage,
 } from "../../../../types/moviematch";
@@ -186,6 +187,18 @@ export class MovieMatchClient extends EventTarget {
     return await Promise.race([
       this.waitForMessage("requestFilterValuesSuccess"),
       this.waitForMessage("requestFilterValuesError"),
+    ]);
+  };
+
+  previewFilters = async (request: PreviewFiltersRequest) => {
+    this.sendMessage({
+      type: "previewFilters",
+      payload: request,
+    });
+
+    return await Promise.race([
+      this.waitForMessage("previewFiltersSuccess"),
+      this.waitForMessage("previewFiltersError"),
     ]);
   };
 

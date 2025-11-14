@@ -12,6 +12,9 @@ interface FieldProps {
   errorMessage?: ReactNode;
   autoComplete?: string;
   children?: ReactNode;
+  type?: React.InputHTMLAttributes<HTMLInputElement>["type"];
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  placeholder?: string;
 }
 
 export const Field = ({
@@ -24,6 +27,9 @@ export const Field = ({
   onBlur,
   errorMessage,
   autoComplete,
+  type,
+  inputMode,
+  placeholder,
 }: FieldProps) => (
   <div
     className={styles.field}
@@ -46,6 +52,9 @@ export const Field = ({
           onChange={onChange}
           onBlur={onBlur}
           paddingTop="s2"
+          type={type}
+          inputMode={inputMode}
+          placeholder={placeholder}
         />
       )}
     {errorMessage && <p className={styles.error}>{errorMessage}</p>}
