@@ -49,15 +49,15 @@ build-binary target=default_target: build-bundle
   # Names are from https://github.com/BretFisher/multi-platform-docker-build#the-problem-with-downloading-binaries-in-dockerfiles
   case "{{target}}" in
     all | linux-amd64 | linux-x86_64)
-      just compile x86_64-unknown-linux-gnu linux-amd64;;&
+      ~/bin/just compile x86_64-unknown-linux-gnu linux-amd64;;&
     all | linux-arm64 | linux-aarch64)
-      just compile aarch64-unknown-linux-gnu linux-arm64;;&
+      ~/bin/just compile aarch64-unknown-linux-gnu linux-arm64;;&
     all | macos-amd64 | macos-x86_64)
-      just compile x86_64-apple-darwin macos-amd64;;&
+      ~/bin/just compile x86_64-apple-darwin macos-amd64;;&
     all | macos-arm64 | macos-aarch64)
-      just compile aarch64-apple-darwin macos-arm64;;&
+      ~/bin/just compile aarch64-apple-darwin macos-arm64;;&
     all | windows-amd64 | window-x86_64)
-      just compile x86_64-pc-windows-msvc windows-amd64;;
+      ~/bin/just compile x86_64-pc-windows-msvc windows-amd64;;
   esac
 
   rm -f {{build_dir}}/pkg.ts
