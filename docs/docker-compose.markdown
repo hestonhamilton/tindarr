@@ -1,65 +1,66 @@
 # Docker Compose
 
-```yaml
-version: '3'
-services:
-  moviematch:
-   image: lukechannings/moviematch:latest
-   container_name: moviematch
-   environment:
-    PLEX_URL: "<Plex URL>"
-    PLEX_TOKEN: "<Plex Token>"
-   ports:
-      - 8000:8000
-```
+This project includes a `docker-compose.yml` file to simplify local development and deployment. It orchestrates the client (frontend) and server (backend) services, building them from the `Dockerfile` and setting up necessary environment variables and volumes for live reloading.
 
-If your Plex server is hosted at `https://plex.example.com`, and your token was `abc123` for example, your environment would look like this:
+## Usage for Local Development
 
-```yaml
-environment:
-  PLEX_URL: "https://plex.example.com"
-  PLEX_TOKEN: "abc123"
-```
+1.  **Ensure Docker is running:** Make sure Docker Desktop or your Docker daemon is active.
 
-If you want to use an [env file](https://github.com/LukeChannings/moviematch/blob/main/.env-template) instead of passing variables via environment, you can use that with docker-compose using the [`env_file`](https://docs.docker.com/compose/compose-file/compose-file-v3/#env_file) option.
+2.  **Navigate to the project root:**
+    ```bash
+    cd /path/to/your/moviematch
+    ```
 
-## Testing a local branch (e.g. `feature/pre-lobby-queue-filtering`)
+3.  **Start the services:**
+    ```bash
+    docker-compose up --build
+    ```
+    This command will:
+    -   Build the `server` image using the `server-builder` stage of the `Dockerfile`.
+    -   Build the `client` image using the `client-builder` stage of the `Dockerfile`.
+    -   Start both services.
+    -   Mount the local `packages/server` and `packages/client` directories into their respective containers, enabling live reloading for development changes.
 
-1. **Clone & checkout the branch**
+4.  **Access the application:**
+    -   The **backend server** will be running on `http://localhost:3001`.
+    -   The **frontend client** will be accessible in your web browser at `http://localhost:5173`.
 
-   ```bash
-   git clone https://github.com/LukeChannings/moviematch.git
-   cd moviematch
-   git checkout feature/pre-lobby-queue-filtering
-   ```
+5.  **Stop the services:**
+    To stop the running services and remove their containers, networks, and volumes:
+    ```bash
+    docker-compose down
+    ```
 
-2. **Create a compose file that builds the local Dockerfile**
+## Environment Variables
 
-   ```yaml
-   # docker-compose.local.yaml
-   services:
-     moviematch:
-       build:
-         context: .
-         dockerfile: Dockerfile
-       image: moviematch:pre-lobby-filtering
-       environment:
-         PLEX_URL: "https://plex.example.com"
-         PLEX_TOKEN: "abc123"
-       ports:
-         - "8000:8000"
-   ```
+The `docker-compose.yml` sets up environment variables for inter-service communication.
 
-3. **Start MovieMatch from the branch**
+-   **Client (`client` service):**
+    -   `VITE_BACKEND_URL: http://server:3001` - This tells the frontend client to connect to the `server` service within the Docker network on port `3001`.
 
-   ```bash
-   docker compose -f docker-compose.local.yaml up --build
-   ```
+-   **Server (`server` service):**
+    -   You will need to provide `PLEX_URL` and `PLEX_TOKEN` either in a `.env` file at the root of the `packages/server` directory or directly in the `docker-compose.yml` under the `environment` section for the `server` service.
+    -   Example:
+        ```yaml
+        services:
+          server:
+            # ... other configurations
+            environment:
+              PLEX_URL: "http://your-plex-ip:32400"
+              PLEX_TOKEN: "your_plex_auth_token"
+        ```
 
-4. **Test the new pre-lobby filters**
+## Building for Production
 
-   - Visit `http://localhost:8000`, log in, and head to **Create Room**.
-   - Use the **Quick Filters** (libraries, genres, collections, release years) and ensure the preview badge shows a non-zero count before creating the lobby.
-   - Try conflicting filters to confirm the “No media match” warning and disabled Create button appear.
+For production deployment, you would typically build the final Docker image without development volumes and run it.
 
-Stop the stack with `docker compose down` when finished testing.
+1.  **Build the production image:**
+    ```bash
+    docker build -t moviematch:latest .
+    ```
+
+2.  **Run the production container:**
+    ```bash
+    docker run -p 3001:3001 -e PLEX_URL="your_plex_url" -e PLEX_TOKEN="your_plex_token" moviematch:latest
+    ```
+    *(Note: Ensure `VITE_BACKEND_URL` is correctly configured in the client build stage if your production setup differs from the default.)*
