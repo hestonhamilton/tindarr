@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import LoginPage from './pages/Login';
 import CreateRoomPage from './pages/CreateRoom';
+import RoomPage from './pages/Room';
+import MatchPage from './pages/Match';
 import './App.css';
 
 function App() {
@@ -10,6 +12,8 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/create-room" element={<CreateRoomPage />} />
+        <Route path="/room/:roomId" element={<RoomPage />} />
+        <Route path="/room/:roomId/matches" element={<MatchPage />} />
         {/* Add other routes here */}
       </Routes>
     </Router>

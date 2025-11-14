@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: server-builder # Build only the server stage
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      # Add any other server-specific environment variables here
+    volumes:
+      - ./packages/server:/app/packages/server # Mount for live reloading during development
+      - /app/packages/server/node_modules # Exclude node_modules from host mount
+    command: npm run dev # Use nodemon for live reloading
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: client-builder # Build only the client stage
+    ports:
+      - "5173:5173" # Default Vite port
+    environment:
+      VITE_BACKEND_URL: http://server:3001 # Connects to the server service
+    volumes:
+      - ./packages/client:/app/packages/client # Mount for live reloading during development
+      - /app/packages/client/node_modules # Exclude node_modules from host mount
+    command: npm run dev # Use Vite's dev server
+    depends_on:
+      - server

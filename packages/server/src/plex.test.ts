@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getNewPin, getAuthToken, getLibraries, getMovies } from './plex';
+import { getNewPin, getAuthToken, getLibraries, getMovies, getMoviesCount } from './plex';
 import { Movie } from './plex';
 
 jest.mock('axios');
@@ -128,7 +128,7 @@ describe('Plex API', () => {
         config: { url: '' },
       });
 
-      const result = await getMovies('http://localhost:32400', 'test-token', '1');
+      const result = await getMovies('http://localhost:32400', 'test-token', '1', undefined, undefined, undefined);
 
       expect(result).toEqual([
         { key: '3', title: 'Movie 1', year: 2020, summary: 'Summary 1', posterUrl: '/poster1.jpg' },
@@ -140,6 +140,118 @@ describe('Plex API', () => {
           headers: {
             'X-Plex-Token': 'test-token',
             'Accept': 'application/json',
+          },
+          params: {},
+        }
+      );
+    });
+
+    it('should return a list of movies from a library with filters including contentRating', async () => {
+      const mockData = {
+        MediaContainer: {
+          Metadata: [
+            { ratingKey: '3', title: 'Movie 1', year: 2020, summary: 'Summary 1', thumb: '/poster1.jpg' },
+          ],
+        },
+      };
+      mockedAxios.get.mockResolvedValue({
+        data: mockData,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { url: '' },
+      });
+
+      const result = await getMovies('http://localhost:32400', 'test-token', '1', 'Action', 2020, 2020, 'PG-13');
+
+      expect(result).toEqual([
+        { key: '3', title: 'Movie 1', year: 2020, summary: 'Summary 1', posterUrl: '/poster1.jpg' },
+      ]);
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        'http://localhost:32400/library/sections/1/all',
+        {
+          headers: {
+            'X-Plex-Token': 'test-token',
+            'Accept': 'application/json',
+          },
+          params: {
+            genre: 'Action',
+            'year>=': 2020,
+            'year<=': 2020,
+            contentRating: 'PG-13',
+          },
+        }
+      );
+    });
+  });
+
+  describe('getMoviesCount', () => {
+    it('should return the count of movies from multiple libraries with filters', async () => {
+      mockedAxios.get
+        .mockResolvedValueOnce({
+          data: {
+            MediaContainer: {
+              Metadata: [
+                { ratingKey: '1', title: 'Movie A' },
+                { ratingKey: '2', title: 'Movie B' },
+              ],
+            },
+          },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: { url: '' },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            MediaContainer: {
+              Metadata: [{ ratingKey: '3', title: 'Movie C' }],
+            },
+          },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: { url: '' },
+        });
+
+      const result = await getMoviesCount(
+        'http://localhost:32400',
+        'test-token',
+        ['1', '2'],
+        'Comedy',
+        1990,
+        2000,
+        'PG'
+      );
+
+      expect(result).toBe(3);
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        'http://localhost:32400/library/sections/1/all',
+        {
+          headers: {
+            'X-Plex-Token': 'test-token',
+            'Accept': 'application/json',
+          },
+          params: {
+            genre: 'Comedy',
+            'year>=': 1990,
+            'year<=': 2000,
+            contentRating: 'PG',
+          },
+        }
+      );
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        'http://localhost:32400/library/sections/2/all',
+        {
+          headers: {
+            'X-Plex-Token': 'test-token',
+            'Accept': 'application/json',
+          },
+          params: {
+            genre: 'Comedy',
+            'year>=': 1990,
+            'year<=': 2000,
+            contentRating: 'PG',
           },
         }
       );

@@ -94,13 +94,24 @@ export async function getLibraries(
 export async function getMovies(
   plexUrl: string,
   plexToken: string,
-  libraryKey: string
+  libraryKey: string,
+  genre?: string,
+  yearMin?: number,
+  yearMax?: number,
+  contentRating?: string
 ): Promise<Movie[]> {
+  const params: Record<string, any> = {};
+  if (genre) params.genre = genre;
+  if (yearMin) params['year>='] = yearMin;
+  if (yearMax) params['year<='] = yearMax;
+  if (contentRating) params.contentRating = contentRating;
+
   const response = await axios.get<PlexMovieResponse>(`${plexUrl}/library/sections/${libraryKey}/all`, {
     headers: {
       'X-Plex-Token': plexToken,
       'Accept': 'application/json',
     },
+    params,
   });
 
   const movies = response.data.MediaContainer.Metadata.map((movie) => ({
@@ -112,4 +123,35 @@ export async function getMovies(
   }));
 
   return movies;
+}
+
+export async function getMoviesCount(
+  plexUrl: string,
+  plexToken: string,
+  libraryKeys: string[],
+  genre?: string,
+  yearMin?: number,
+  yearMax?: number,
+  contentRating?: string
+): Promise<number> {
+  let totalCount = 0;
+
+  for (const libraryKey of libraryKeys) {
+    const params: Record<string, any> = {};
+    if (genre) params.genre = genre;
+    if (yearMin) params['year>='] = yearMin;
+    if (yearMax) params['year<='] = yearMax;
+    if (contentRating) params.contentRating = contentRating;
+
+    const response = await axios.get<PlexMovieResponse>(`${plexUrl}/library/sections/${libraryKey}/all`, {
+      headers: {
+        'X-Plex-Token': plexToken,
+        'Accept': 'application/json',
+      },
+      params,
+    });
+    totalCount += response.data.MediaContainer.Metadata.length;
+  }
+
+  return totalCount;
 }

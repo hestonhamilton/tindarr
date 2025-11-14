@@ -1,11 +1,12 @@
 import request from 'supertest';
 import express from 'express';
 import plexRouter from './plex';
-import { getLibraries } from '../plex';
+import { getLibraries, getMoviesCount } from '../plex';
 
 jest.mock('../plex');
 
 const mockedGetLibraries = getLibraries as jest.Mock;
+const mockedGetMoviesCount = getMoviesCount as jest.Mock;
 
 const app = express();
 app.use(express.json()); // For parsing application/json
@@ -59,6 +60,53 @@ describe('Plex routes', () => {
 
       expect(res.status).toBe(500);
       expect(res.body).toEqual({ error: 'Failed to get Plex libraries.' });
+    });
+  });
+
+  describe('GET /plex/movies/count', () => {
+    it('should return the count of movies', async () => {
+      mockedGetMoviesCount.mockResolvedValue(10);
+
+      const res = await request(app)
+        .get('/plex/movies/count')
+        .query({
+          plexUrl: 'http://localhost:32400',
+          plexToken: 'test-token',
+          libraryKeys: ['1', '2'],
+          genre: 'Action',
+          yearMin: 2000,
+          yearMax: 2020,
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ count: 10 });
+      expect(mockedGetMoviesCount).toHaveBeenCalledWith(
+        'http://localhost:32400',
+        'test-token',
+        ['1', '2'],
+        'Action',
+        2000,
+        2020,
+        undefined
+      );
+    });
+
+    it('should return 400 if plexUrl, plexToken, or libraryKeys are missing', async () => {
+      const res = await request(app).get('/plex/movies/count');
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: 'Plex URL, token, and library keys are required.' });
+    });
+
+    it('should return 500 if getting movies count fails', async () => {
+      mockedGetMoviesCount.mockRejectedValue(new Error('Failed'));
+
+      const res = await request(app)
+        .get('/plex/movies/count')
+        .query({ plexUrl: 'http://localhost:32400', plexToken: 'test-token', libraryKeys: ['1'] });
+
+      expect(res.status).toBe(500);
+      expect(res.body).toEqual({ error: 'Failed to get movies count.' });
     });
   });
 });
