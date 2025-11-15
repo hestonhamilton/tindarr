@@ -107,7 +107,7 @@ const CreateRoomPage: React.FC = () => {
       <h2>Movie Count Preview</h2>
       {isLoadingMovieCount && <div>Loading movie count...</div>}
       {isErrorMovieCount && <div>Error loading movie count: {errorMovieCount?.message}</div>}
-      {movieCount !== undefined && <div>{movieCount} movies match your criteria.</div>}
+      {movieCount !== undefined && <div>{movieCount} items match your criteria.</div>}
 
       <button onClick={handleCreateRoom} disabled={selectedLibraries.length === 0 || movieCount === 0}>
         Create Room

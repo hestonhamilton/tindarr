@@ -34,3 +34,11 @@ export interface ClientToServerEvents {
   joinRoom: (payload: JoinRoomPayload) => void;
   leaveRoom: (payload: LeaveRoomPayload) => void;
 }
+
+export interface Movie {
+  key: string;
+  title: string;
+  year: number;
+  summary: string;
+  posterUrl: string;
+}

@@ -8,7 +8,7 @@ import { Socket } from 'socket.io-client';
 const RoomPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const [currentMovieIndex, setCurrentMovieIndex] = useState(0);
-  const socket: Socket<ClientToServerEvents, ServerToClientEvents> | null = useSocket(); // Corrected type order
+  const socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = useSocket(); // Corrected type order
 
   const plexUrl = localStorage.getItem('plexUrl') || '';
   const plexToken = localStorage.getItem('plexToken') || '';
