@@ -147,6 +147,56 @@ export async function getMovies(
   return movies;
 }
 
+interface PlexGenreResponse {
+  MediaContainer: {
+    Directory: { // Corrected from 'Genre' to 'Directory'
+      key: string;
+      title: string;
+      type: 'genre';
+    }[];
+  };
+}
+
+export async function getGenres(
+  plexUrl: string,
+  plexToken: string,
+  libraryKeys: string[]
+): Promise<string[]> {
+  const allGenres = new Set<string>();
+
+  for (const libraryKey of libraryKeys) {
+    try {
+      const requestUrl = `${plexUrl}/library/sections/${libraryKey}/genre`;
+      console.log(`Fetching genres from Plex: ${requestUrl}`); // Added log
+      const response = await axios.get<PlexGenreResponse>(requestUrl, {
+        headers: {
+          'X-Plex-Token': plexToken,
+          'Accept': 'application/json',
+        },
+      });
+
+      console.log(`Plex genres response for library ${libraryKey}:`, JSON.stringify(response.data)); // Added log
+
+      if (response.data && response.data.MediaContainer && response.data.MediaContainer.Directory) { // Corrected to Directory
+        response.data.MediaContainer.Directory.forEach(genre => { // Corrected to Directory
+          allGenres.add(genre.title); // Extract 'title' for the genre tag
+        });
+      } else {
+        console.warn(`No genres found in Plex response for library ${libraryKey}.`); // Added log
+      }
+    } catch (error: any) {
+      console.error(`Failed to get genres for library ${libraryKey}:`, error.message);
+      if (error.response) {
+        console.error(`Plex API response status: ${error.response.status}`);
+        console.error(`Plex API response data: ${JSON.stringify(error.response.data)}`);
+      }
+      // Continue to the next library even if one fails
+    }
+  }
+
+  return Array.from(allGenres).sort();
+}
+
 export async function getMoviesCount(
   plexUrl: string,
   plexToken: string,

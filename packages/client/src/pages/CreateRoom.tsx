@@ -2,22 +2,30 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlexLibraries } from '../hooks/usePlexLibraries';
 import { useMovieCount } from '../hooks/useMovieCount';
+import { usePlexGenres } from '../hooks/usePlexGenres'; // Import usePlexGenres
 import { Library } from '../types';
 
 const CreateRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const { data: libraries, isLoading: isLoadingLibraries, isError: isErrorLibraries, error: errorLibraries } = usePlexLibraries();
   const [selectedLibraries, setSelectedLibraries] = useState<string[]>([]);
-  const [genre, setGenre] = useState<string>('');
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]); // New state for selected genres
   const [yearMin, setYearMin] = useState<string>('');
   const [yearMax, setYearMax] = useState<string>('');
   const [contentRating, setContentRating] = useState<string>('');
+
+  // Fetch genres based on selected libraries
+  const { data: genres, isLoading: isLoadingGenres, isError: isErrorGenres, error: errorGenres } = usePlexGenres({
+    plexUrl: localStorage.getItem('plexUrl') || '',
+    plexToken: localStorage.getItem('plexToken') || '',
+    libraryKeys: selectedLibraries,
+  });
 
   const { data: movieCount, isLoading: isLoadingMovieCount, isError: isErrorMovieCount, error: errorMovieCount } = useMovieCount({
     plexUrl: localStorage.getItem('plexUrl') || '',
     plexToken: localStorage.getItem('plexToken') || '',
     libraryKeys: selectedLibraries,
-    genre: genre || undefined,
+    genre: selectedGenres.join(',') || undefined, // Pass selected genres as a comma-separated string
     yearMin: yearMin ? parseInt(yearMin, 10) : undefined,
     yearMax: yearMax ? parseInt(yearMax, 10) : undefined,
     contentRating: contentRating || undefined,
@@ -25,16 +33,29 @@ const CreateRoomPage: React.FC = () => {
 
   const handleLibraryChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = event.target;
-    setSelectedLibraries((prevSelected) =>
+    setSelectedLibraries((prevSelected) => {
+      const newSelected = checked
+        ? [...prevSelected, value]
+        : prevSelected.filter((libraryId) => libraryId !== value);
+      // Clear selected genres when libraries change
+      setSelectedGenres([]);
+      return newSelected;
+    });
+  };
+
+  const handleGenreChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = event.target;
+    setSelectedGenres((prevSelected) =>
       checked
         ? [...prevSelected, value]
-        : prevSelected.filter((libraryId) => libraryId !== value)
+        : prevSelected.filter((genreName) => genreName !== value)
     );
   };
 
   const handleCreateRoom = () => {
-    // Store selected library keys in localStorage
+    // Store selected library keys and genres in localStorage
     localStorage.setItem('selectedLibraryKeys', JSON.stringify(selectedLibraries));
+    localStorage.setItem('selectedGenres', JSON.stringify(selectedGenres)); // Store selected genres
 
     // In a real scenario, this would make an API call to create a room and get a real roomId
     const placeholderRoomId = 'test-room-123';
@@ -67,15 +88,26 @@ const CreateRoomPage: React.FC = () => {
       ))}
 
       <h2>Filters</h2>
-      <div>
-        <label htmlFor="genre">Genre:</label>
-        <input
-          type="text"
-          id="genre"
-          value={genre}
-          onChange={(e) => setGenre(e.target.value)}
-        />
-      </div>
+      {selectedLibraries.length > 0 && ( // Only show genres if libraries are selected
+        <div>
+          <h3>Genres</h3>
+          {isLoadingGenres && <div>Loading genres...</div>}
+          {isErrorGenres && <div>Error loading genres: {errorGenres?.message}</div>}
+          {genres?.map((genreName) => (
+            <div key={genreName}>
+              <input
+                type="checkbox"
+                id={`genre-${genreName}`}
+                value={genreName}
+                checked={selectedGenres.includes(genreName)}
+                onChange={handleGenreChange}
+              />
+              <label htmlFor={`genre-${genreName}`}>{genreName}</label>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div>
         <label htmlFor="yearMin">Year Min:</label>
         <input

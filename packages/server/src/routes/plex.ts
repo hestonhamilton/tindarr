@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getLibraries, getMoviesCount, getMovies } from '../plex';
+import { getLibraries, getMoviesCount, getMovies, getGenres } from '../plex';
 import { Movie } from '../types'; // Import Movie type
 
 const router = Router();
@@ -91,6 +91,40 @@ router.get('/movies', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to get movies.' });
+  }
+});
+
+router.get('/genres', async (req, res) => {
+  try {
+    const { plexUrl, plexToken, libraryKeys } = req.query;
+
+    if (!plexUrl || !plexToken || !libraryKeys) {
+      return res.status(400).json({ error: 'Plex URL, token, and library keys are required.' });
+    }
+
+    // Ensure libraryKeys is an array
+    let libraryKeysArray: string[] = [];
+    if (typeof libraryKeys === 'string') {
+      libraryKeysArray = libraryKeys.split(',');
+    } else if (Array.isArray(libraryKeys)) {
+      libraryKeysArray = libraryKeys as string[];
+    } else {
+      return res.status(400).json({ error: 'Invalid libraryKeys parameter.' });
+    }
+
+    if (libraryKeysArray.length === 0 || (libraryKeysArray.length === 1 && libraryKeysArray[0] === '')) {
+      return res.status(400).json({ error: 'At least one library key is required.' });
+    }
+
+    const genres = await getGenres(
+      plexUrl as string,
+      plexToken as string,
+      libraryKeysArray
+    );
+    res.json(genres);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to get genres.' });
   }
 });
 
