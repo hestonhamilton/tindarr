@@ -199,6 +199,18 @@ const RoomPage: React.FC = () => {
         <button onClick={() => swipe('right')} style={{ padding: '10px 20px', backgroundColor: 'green', color: 'white', border: 'none', borderRadius: '5px' }}>Like</button>
       </div>
 
+      {/* Duplicated Movie Details Section (for testing separation) */}
+      {currentMovie && (
+        <div style={{ textAlign: 'center', maxWidth: '600px', padding: '20px', border: '1px dashed gray', marginTop: '20px' }}>
+          <h2>{currentMovie.title} ({currentMovie.year})</h2>
+          {currentMovie.tagline && <p><i>"{currentMovie.tagline}"</i></p>}
+          <p>{currentMovie.summary}</p>
+          {currentMovie.duration !== undefined && <p>Duration: {formatDuration(currentMovie.duration)}</p>}
+          {currentMovie.rating !== undefined && <p>Critic Score: {currentMovie.rating} (IMDb Icon Placeholder)</p>}
+          {currentMovie.audienceRating !== undefined && <p>Audience Score: {currentMovie.audienceRating} (Rotten Tomatoes Icon Placeholder)</p>}
+        </div>
+      )}
+
       {roomState?.likedMovies && roomState.likedMovies.length > 0 && (
         <div style={{ margin: '20px', border: '1px solid lightgray', padding: '10px' }}>
           <h3>Liked Movies</h3>
