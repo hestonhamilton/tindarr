@@ -65,29 +65,54 @@ describe('Plex routes', () => {
 
   describe('GET /plex/movies/count', () => {
     it('should return the count of movies', async () => {
-      mockedGetMoviesCount.mockResolvedValue(10);
+      const selectedLibraries = [
+        { key: '1', type: 'movie' },
+        { key: '2', type: 'movie' },
+      ];
+      mockedGetMoviesCount
+        .mockResolvedValueOnce(6)
+        .mockResolvedValueOnce(4);
 
       const res = await request(app)
         .get('/plex/movies/count')
         .query({
           plexUrl: 'http://localhost:32400',
           plexToken: 'test-token',
-          libraryKeys: ['1', '2'],
+          selectedLibraries: JSON.stringify(selectedLibraries),
           genre: 'Action',
           yearMin: 2000,
           yearMax: 2020,
+          durationMin: 90,
+          durationMax: 120,
         });
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ count: 10 });
-      expect(mockedGetMoviesCount).toHaveBeenCalledWith(
+      expect(mockedGetMoviesCount).toHaveBeenNthCalledWith(
+        1,
         'http://localhost:32400',
         'test-token',
-        ['1', '2'],
+        '1',
+        'movie',
         'Action',
         2000,
         2020,
-        undefined
+        undefined,
+        90,
+        120
+      );
+      expect(mockedGetMoviesCount).toHaveBeenNthCalledWith(
+        2,
+        'http://localhost:32400',
+        'test-token',
+        '2',
+        'movie',
+        'Action',
+        2000,
+        2020,
+        undefined,
+        90,
+        120
       );
     });
 
@@ -95,7 +120,7 @@ describe('Plex routes', () => {
       const res = await request(app).get('/plex/movies/count');
 
       expect(res.status).toBe(400);
-      expect(res.body).toEqual({ error: 'Plex URL, token, and library keys are required.' });
+      expect(res.body).toEqual({ error: 'Plex URL, token, and selectedLibraries are required.' });
     });
 
     it('should return 500 if getting movies count fails', async () => {
@@ -103,7 +128,11 @@ describe('Plex routes', () => {
 
       const res = await request(app)
         .get('/plex/movies/count')
-        .query({ plexUrl: 'http://localhost:32400', plexToken: 'test-token', libraryKeys: ['1'] });
+        .query({
+          plexUrl: 'http://localhost:32400',
+          plexToken: 'test-token',
+          selectedLibraries: JSON.stringify([{ key: '1', type: 'movie' }]),
+        });
 
       expect(res.status).toBe(500);
       expect(res.body).toEqual({ error: 'Failed to get movies count.' });

@@ -9,3 +9,8 @@ node_modules/
 packages/*/node_modules
 packages/*/dist
 packages/*/build
+.venv*
+.cbi_analysis.toml
+cbi_compile_commands.json
+cbi.log
+audit-scan.log

@@ -5,6 +5,10 @@ import { Movie } from './types';
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
 describe('Plex API', () => {
   describe('getNewPin', () => {
     it('should return a new pin', async () => {
@@ -60,6 +64,13 @@ describe('Plex API', () => {
     });
 
     it('should return null if there is no auth token', async () => {
+      const timeoutSpy = jest
+        .spyOn(global, 'setTimeout')
+        .mockImplementation((cb: (...args: any[]) => void) => {
+          cb();
+          return {} as NodeJS.Timeout;
+        });
+
       mockedAxios.get.mockResolvedValue({
         data: {},
         status: 200,
@@ -71,6 +82,7 @@ describe('Plex API', () => {
       const result = await getAuthToken(123);
 
       expect(result).toBeNull();
+      timeoutSpy.mockRestore();
     });
   });
 
@@ -181,46 +193,138 @@ describe('Plex API', () => {
           params: {
             type: 1, // Added type
             genre: 'Action',
-            'year.gte': 2020, // Changed from year>=
-            'year.lte': 2020, // Changed from year<=
             contentRating: 'PG-13',
           },
         }
       );
     });
+    it('maps extended metadata fields', async () => {
+      mockedAxios.get.mockResolvedValue({
+        data: {
+          MediaContainer: {
+            Metadata: [
+              {
+                ratingKey: '10',
+                title: 'Rich Metadata',
+                year: 2022,
+                summary: 'Summary',
+                thumb: '/thumb.jpg',
+                rating: 8.1,
+                originallyAvailableAt: '2022-01-01',
+                tagline: 'Tag',
+                studio: 'Studio',
+                duration: 5400000,
+                Genre: [{ tag: 'Drama' }, { tag: 'Comedy' }],
+                Country: [{ tag: 'US' }],
+                Director: [{ tag: 'Director' }],
+                Writer: [{ tag: 'Writer' }],
+                Role: [{ tag: 'Actor' }],
+                audienceRating: 7.5,
+                audienceRatingImage: '/audience.png',
+                ratingImage: '/critic.png',
+              },
+            ],
+          },
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { url: '' },
+      });
+
+      const result = await getMovies('http://localhost:32400', 'token', '1', 'movie');
+
+      expect(result).toEqual([
+        {
+          key: '10',
+          title: 'Rich Metadata',
+          year: 2022,
+          summary: 'Summary',
+          posterUrl: '/thumb.jpg',
+          rating: 8.1,
+          originallyAvailableAt: '2022-01-01',
+          tagline: 'Tag',
+          studio: 'Studio',
+          duration: 5400000,
+          genres: ['Drama', 'Comedy'],
+          countries: ['US'],
+          directors: ['Director'],
+          writers: ['Writer'],
+          roles: ['Actor'],
+          audienceRating: 7.5,
+          audienceRatingImage: '/audience.png',
+          ratingImage: '/critic.png',
+        },
+      ]);
+    });
+
+    it('applies duration and year filters and sorts by duration', async () => {
+      mockedAxios.get.mockResolvedValue({
+        data: {
+          MediaContainer: {
+            Metadata: [
+              { ratingKey: '1', title: 'Short', year: 2019, duration: 2000 },
+              { ratingKey: '2', title: 'Medium', year: 2021, duration: 4000 },
+              { ratingKey: '3', title: 'Long', year: 2022, duration: 6000 },
+            ],
+          },
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { url: '' },
+      });
+
+      const result = await getMovies(
+        'http://localhost:32400',
+        'token',
+        '1',
+        'movie',
+        undefined,
+        2020,
+        2022,
+        undefined,
+        3000,
+        5000,
+        'duration:desc'
+      );
+
+      expect(result.map(movie => movie.key)).toEqual(['2']);
+    });
   });
 
   describe('getMoviesCount', () => {
-    it('should return the count of movies from a single library with filters', async () => { // Changed description
-      mockedAxios.get
-        .mockResolvedValueOnce({
-          data: {
-            MediaContainer: {
-              Metadata: [
-                { ratingKey: '1', title: 'Movie A' },
-                { ratingKey: '2', title: 'Movie B' },
-              ],
-            },
+    it('filters by year and duration ranges', async () => {
+      mockedAxios.get.mockResolvedValue({
+        data: {
+          MediaContainer: {
+            Metadata: [
+              { ratingKey: '1', year: 1995, duration: 4000 },
+              { ratingKey: '2', year: 2005, duration: 2000 },
+              { ratingKey: '3', year: 1998, duration: 1000 },
+            ],
           },
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config: { url: '' },
-        });
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { url: '' },
+      });
 
-      // Updated call to getMoviesCount
       const result = await getMoviesCount(
         'http://localhost:32400',
         'test-token',
-        '1', // Single library key
-        'movie', // Library type
+        '1',
+        'movie',
         'Comedy',
         1990,
         2000,
-        'PG'
+        'PG',
+        3000,
+        5000
       );
 
-      expect(result).toBe(2); // Expect count for a single library
+      expect(result).toBe(1);
       expect(mockedAxios.get).toHaveBeenCalledWith(
         'http://localhost:32400/library/sections/1/all',
         {
@@ -229,10 +333,8 @@ describe('Plex API', () => {
             'Accept': 'application/json',
           },
           params: {
-            type: 1, // Added type
+            type: 1,
             genre: 'Comedy',
-            'year.gte': 1990, // Changed from year>=
-            'year.lte': 2000, // Changed from year<=
             contentRating: 'PG',
           },
         }
