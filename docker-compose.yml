@@ -10,6 +10,7 @@ services:
       - "3001:3001"
     environment:
       NODE_ENV: development
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173} # Client origin for CORS
       # Add any other server-specific environment variables here
     volumes:
       - ./packages/server:/app/packages/server # Mount for live reloading during development

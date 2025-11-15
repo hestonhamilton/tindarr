@@ -49,6 +49,13 @@ The `docker-compose.yml` sets up environment variables for inter-service communi
               PLEX_URL: "http://your-plex-ip:32400"
               PLEX_TOKEN: "your_plex_auth_token"
         ```
+    -   **`FRONTEND_ORIGIN`**: This variable is crucial for configuring Cross-Origin Resource Sharing (CORS) for the Socket.IO server. It must match the exact URL (including protocol, IP/domain, and port) from which your browser is accessing the client application.
+
+        If you are accessing the client from `http://192.168.4.14:5173`, you must set this environment variable before running `docker compose up`:
+        ```bash
+        FRONTEND_ORIGIN=http://192.168.4.14:5173 docker compose up
+        ```
+        If not set, it defaults to `http://localhost:5173`, which works if you access the client via `localhost`.
 
 ## Building for Production
 

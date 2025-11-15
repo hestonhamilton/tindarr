@@ -12,7 +12,7 @@ import {
 export function createSocketServer(server: http.Server) {
   const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
     cors: {
-      origin: "http://192.168.4.14:5173", // Allow requests from your client's origin
+      origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173", // Use environment variable for client origin
       methods: ["GET", "POST"]
     }
   });
