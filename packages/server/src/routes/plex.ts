@@ -26,10 +26,70 @@ router.get('/years/range', async (req, res) => {
   try {
     const { plexUrl, plexToken, selectedLibraries } = req.query;
 
-    console.log(`[Server] Received request for /years/range with selectedLibraries: ${selectedLibraries}`); // Added log
+    if (!plexUrl || !plexToken || !selectedLibraries) {
+      return res.status(400).json({ error: 'Plex URL, token, and selectedLibraries are required.' });
+    }
+
+    let parsedSelectedLibraries: SelectedLibrary[];
+    try {
+      parsedSelectedLibraries = JSON.parse(selectedLibraries as string);
+      if (!Array.isArray(parsedSelectedLibraries) || parsedSelectedLibraries.length === 0) {
+        return res.status(400).json({ error: 'Invalid or empty selectedLibraries parameter.' });
+      }
+    } catch (parseError) {
+      return res.status(400).json({ error: 'Invalid JSON for selectedLibraries parameter.' });
+    }
+
+    let overallMinYear: number | undefined;
+    let overallMaxYear: number | undefined;
+
+    for (const lib of parsedSelectedLibraries) {
+      const yearRange = await getLibraryYearRange(
+        plexUrl as string,
+        plexToken as string,
+        lib.key,
+        lib.type
+      );
+
+      if (yearRange) {
+        if (overallMinYear === undefined || yearRange.minYear < overallMinYear) {
+          overallMinYear = yearRange.minYear;
+        }
+        if (overallMaxYear === undefined || yearRange.maxYear > overallMaxYear) {
+          overallMaxYear = yearRange.maxYear;
+        }
+      }
+    }
+
+    if (overallMinYear !== undefined && overallMaxYear !== undefined) {
+      console.log(`[Server] Overall year range: ${overallMinYear}-${overallMaxYear}`);
+      res.json({ minYear: overallMinYear, maxYear: overallMaxYear });
+    } else {
+      console.log('[Server] No overall year range could be determined.');
+      res.json({ minYear: null, maxYear: null }); // No years found
+    }
+  } catch (error) {
+    console.error(`[Server] Failed to get year range: ${error}`);
+    res.status(500).json({ error: 'Failed to get year range.' });
+  }
+});
+
+router.get('/movies/count', async (req, res) => {
+  try {
+    const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating } = req.query;
+
+    console.log(`[Server] Received request for /movies/count with:`); // Added log
+    console.log(`[Server]   plexUrl: ${plexUrl}`); // Added log
+    console.log(`[Server]   plexToken: ${plexToken ? '[REDACTED]' : 'N/A'}`); // Added log
+    console.log(`[Server]   selectedLibraries: ${selectedLibraries}`); // Added log
+    console.log(`[Server]   genre: ${genre}`); // Added log
+    console.log(`[Server]   yearMin: ${yearMin}`); // Added log
+    console.log(`[Server]   yearMax: ${yearMax}`); // Added log
+    console.log(`[Server]   contentRating: ${contentRating}`); // Added log
+
 
     if (!plexUrl || !plexToken || !selectedLibraries) {
-      console.error('[Server] Missing required parameters for /years/range'); // Added log
+      console.error('[Server] Missing required parameters for /movies/count'); // Added log
       return res.status(400).json({ error: 'Plex URL, token, and selectedLibraries are required.' });
     }
 
@@ -46,80 +106,27 @@ router.get('/years/range', async (req, res) => {
       return res.status(400).json({ error: 'Invalid JSON for selectedLibraries parameter.' });
     }
 
-    let overallMinYear: number | undefined;
-    let overallMaxYear: number | undefined;
-
-    for (const lib of parsedSelectedLibraries) {
-      console.log(`[Server] Processing library: ${lib.key} (type: ${lib.type}) for year range.`); // Added log
-      const yearRange = await getLibraryYearRange(
-        plexUrl as string,
-        plexToken as string,
-        lib.key,
-        lib.type
-      );
-
-      if (yearRange) {
-        console.log(`[Server] Year range for library ${lib.key}: ${yearRange.minYear}-${yearRange.maxYear}`); // Added log
-        if (overallMinYear === undefined || yearRange.minYear < overallMinYear) {
-          overallMinYear = yearRange.minYear;
-        }
-        if (overallMaxYear === undefined || yearRange.maxYear > overallMaxYear) {
-          overallMaxYear = yearRange.maxYear;
-        }
-      } else {
-        console.warn(`[Server] No year range returned for library ${lib.key}.`); // Added log
-      }
-    }
-
-    if (overallMinYear !== undefined && overallMaxYear !== undefined) {
-      console.log(`[Server] Overall year range: ${overallMinYear}-${overallMaxYear}`); // Added log
-      res.json({ minYear: overallMinYear, maxYear: overallMaxYear });
-    } else {
-      console.log('[Server] No overall year range could be determined.'); // Added log
-      res.json({ minYear: null, maxYear: null }); // No years found
-    }
-  } catch (error) {
-    console.error(`[Server] Failed to get year range: ${error}`); // Added log
-    res.status(500).json({ error: 'Failed to get year range.' });
-  }
-});
-
-router.get('/movies/count', async (req, res) => {
-  try {
-    const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating } = req.query;
-
-    if (!plexUrl || !plexToken || !selectedLibraries) {
-      return res.status(400).json({ error: 'Plex URL, token, and selectedLibraries are required.' });
-    }
-
-    let parsedSelectedLibraries: SelectedLibrary[];
-    try {
-      parsedSelectedLibraries = JSON.parse(selectedLibraries as string);
-      if (!Array.isArray(parsedSelectedLibraries) || parsedSelectedLibraries.length === 0) {
-        return res.status(400).json({ error: 'Invalid or empty selectedLibraries parameter.' });
-      }
-    } catch (parseError) {
-      return res.status(400).json({ error: 'Invalid JSON for selectedLibraries parameter.' });
-    }
-
     let totalCount = 0;
     for (const lib of parsedSelectedLibraries) {
+      console.log(`[Server] Calling getMoviesCount for library ${lib.key} (type: ${lib.type})`); // Added log
       const count = await getMoviesCount(
         plexUrl as string,
         plexToken as string,
-        lib.key, // Pass single library key
-        lib.type, // Pass library type
+        lib.key,
+        lib.type,
         genre as string,
         yearMin ? parseInt(yearMin as string, 10) : undefined,
         yearMax ? parseInt(yearMax as string, 10) : undefined,
         contentRating as string
       );
       totalCount += count;
+      console.log(`[Server] Count for library ${lib.key}: ${count}. Current total: ${totalCount}`); // Added log
     }
 
+    console.log(`[Server] Final total movie count: ${totalCount}`); // Added log
     res.json({ count: totalCount });
   } catch (error) {
-    console.error(error);
+    console.error(`[Server] Failed to get movies count: ${error}`); // Added log
     res.status(500).json({ error: 'Failed to get movies count.' });
   }
 });
