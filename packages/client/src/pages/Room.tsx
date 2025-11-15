@@ -150,12 +150,7 @@ const RoomPage: React.FC = () => {
   return (
     <div>
       <h1>Movie Room: {roomCode}</h1>
-      <div style={{
-        position: 'relative',
-        width: '300px', // Fixed width for the card container
-        height: '500px', // Fixed height for the card container
-        margin: '20px auto',
-      }}>
+      <div className='cardContainer' style={{ margin: '20px auto' }}>
         {currentMovie && ( // Only render TinderCard if currentMovie exists
           <TinderCard
             className='swipe'
@@ -163,17 +158,8 @@ const RoomPage: React.FC = () => {
             onSwipe={(dir: string) => swiped(dir)} // Pass dir directly
             onCardLeftScreen={() => outOfFrame()} // No movieKey needed
             preventSwipe={['up', 'down']}
-            style={{ position: 'absolute', width: '100%', height: '100%' }}
           >
-            <div style={{
-              position: 'relative',
-              backgroundColor: '#fff',
-              width: '100%',
-              height: '100%',
-              boxShadow: '0px 0px 60px 0px rgba(0,0,0,0.30)',
-              borderRadius: '20px',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
+            <div className='card' style={{
               backgroundImage: `url(${plexUrl}${currentMovie.posterUrl}?X-Plex-Token=${plexToken})`,
               display: 'flex',
               flexDirection: 'column',
@@ -181,14 +167,7 @@ const RoomPage: React.FC = () => {
               alignItems: 'center',
               color: '#fff',
               textShadow: '2px 2px 4px rgba(0,0,0,0.7)'
-            }}>
-              <h2 style={{ margin: '10px', opacity: 0 }}>{currentMovie.title} ({currentMovie.year})</h2>
-              {currentMovie.tagline && <p style={{ margin: '0 10px 10px 10px', textAlign: 'center', opacity: 0 }}><i>"{currentMovie.tagline}"</i></p>}
-              <p style={{ opacity: 0 }}>{currentMovie.summary}</p> {/* Display summary */}
-              {currentMovie.duration !== undefined && <p style={{ opacity: 0 }}>Duration: {formatDuration(currentMovie.duration)}</p>} {/* Display duration */}
-              {currentMovie.rating !== undefined && <p style={{ opacity: 0 }}>Critic Score: {currentMovie.rating} (IMDb Icon Placeholder)</p>} {/* Display rating */}
-              {currentMovie.audienceRating !== undefined && <p style={{ opacity: 0 }}>Audience Score: {currentMovie.audienceRating} (Rotten Tomatoes Icon Placeholder)</p>} {/* Display audience rating */}
-            </div>
+            }}></div>
           </TinderCard>
         )}
       </div>
