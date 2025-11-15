@@ -1,6 +1,6 @@
-# MovieMatch
+# Tindarr
 
-MovieMatch is a modern web application designed to help friends and families discover movies together. Connect to your Plex Media Server, create a room, set filters, and swipe through movie suggestions Tinder-style. When everyone in the room likes the same movie, it's a match!
+Tindarr is a modern web application designed to help friends and families discover movies together. Connect to your Plex Media Server, create a room, set filters, and swipe through movie suggestions Tinder-style. When everyone in the room likes the same movie, it's a match!
 
 ## Features
 
@@ -43,8 +43,8 @@ This project is structured as a monorepo using npm workspaces.
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/hestonhamilton/moviematch.git
-    cd moviematch
+    git clone https://github.com/hestonhamilton/tindarr.git
+    cd tindarr
     ```
 2.  **Install dependencies (root command uses npm workspaces):**
     ```bash
@@ -73,7 +73,7 @@ Additional deep dives are available in:
 
 - [`docs/configuration.md`](docs/configuration.md) – comprehensive environment variable reference
 - [`docs/docker-compose.md`](docs/docker-compose.md) – container-based workflow
-- [`docs/reverse-proxy.md`](docs/reverse-proxy.md) – examples for fronting MovieMatch with Nginx/Traefik/Apache
+- [`docs/reverse-proxy.md`](docs/reverse-proxy.md) – examples for fronting Tindarr with Nginx/Traefik/Apache
 - [`docs/AGENTS.md`](docs/AGENTS.md) – internal guidelines for automated contributors
 
 #### Running the application (Node dev servers)
@@ -150,10 +150,17 @@ The client and server use environment variables for configuration.
 
 We welcome contributions! Please see our [CONTRIBUTING.markdown](CONTRIBUTING.markdown) for guidelines.
 
+### Releases
+
+- Release history lives under [`docs/releases/`](docs/releases/) (see [v2.0.0](docs/releases/v2.0.0.md) for the current milestone).
+- Update the [`VERSION`](VERSION) file before tagging so CI sees the correct semantic version.
+- Tag new versions from `main` using `git tag -a vX.Y.Z -m "Tindarr vX.Y.Z"` and `git push origin vX.Y.Z`.
+- The [`Release`](.github/workflows/release.yaml) workflow runs automatically for version tags, builds both workspaces, uploads release archives, and publishes Docker images.
+
 ## License
 
 This project is licensed under the terms of the [LICENSE](LICENSE) file.
 
 ## Credits
 
-MovieMatch was originally created by [Luke Channings](https://github.com/LukeChannings/moviematch). This rewrite draws inspiration from his work while modernizing the stack around a React/Vite frontend and a Node/Express backend.
+Tindarr draws inspiration from [Luke Channings' MovieMatch project](https://github.com/LukeChannings/moviematch) while modernizing the stack around a React/Vite frontend and a Node/Express backend.
