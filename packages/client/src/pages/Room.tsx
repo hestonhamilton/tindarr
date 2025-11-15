@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePlexMovies } from '../hooks/usePlexMovies';
 import { useSocket } from '../hooks/useSocket';
-import { Movie, ClientToServerEvents, ServerToClientEvents, SelectedLibrary, Room } from '../types'; // Import Room
+import { Movie, ClientToServerEvents, ServerToClientEvents, Room } from '../types'; // Removed SelectedLibrary
 import { Socket } from 'socket.io-client';
 
 const RoomPage: React.FC = () => {
@@ -17,6 +17,12 @@ const RoomPage: React.FC = () => {
   const userId = localStorage.getItem('userId') || ''; // Retrieve userId
   const userName = localStorage.getItem('userName') || ''; // Retrieve userName
 
+  console.log('RoomPage: Initial render or state change');
+  console.log('RoomPage: roomCode from useParams:', roomCode);
+  console.log('RoomPage: userId from localStorage:', userId);
+  console.log('RoomPage: userName from localStorage:', userName);
+  console.log('RoomPage: roomState:', roomState);
+
   const { data: movies, isLoading, isError, error } = usePlexMovies({
     plexUrl,
     plexToken,
@@ -28,17 +34,38 @@ const RoomPage: React.FC = () => {
     durationMin: roomState?.durationMin, // Use from roomState
     durationMax: roomState?.durationMax, // Use from roomState
     sortOrder: roomState?.sortOrder, // Use from roomState
-  }, { enabled: !!roomState }); // Only enable when roomState is available
+  }); // Corrected: removed the second argument
+
+  console.log('RoomPage: usePlexMovies - isLoading:', isLoading);
+  console.log('RoomPage: usePlexMovies - isError:', isError);
+  console.log('RoomPage: usePlexMovies - error:', error);
+  console.log('RoomPage: usePlexMovies - movies:', movies);
+  console.log('RoomPage: usePlexMovies - params:', {
+    plexUrl,
+    plexToken,
+    selectedLibraries: roomState?.selectedLibraries || [],
+    genre: roomState?.selectedGenres.join(',') || undefined,
+    yearMin: roomState?.yearMin,
+    yearMax: roomState?.yearMax,
+    contentRating: roomState?.selectedContentRatings.join(',') || undefined,
+    durationMin: roomState?.durationMin,
+    durationMax: roomState?.durationMax,
+    sortOrder: roomState?.sortOrder,
+  });
 
   useEffect(() => {
+    console.log('RoomPage: useEffect triggered');
     if (socket && roomCode) {
+      console.log('RoomPage: Emitting joinRoom event');
       socket.emit('joinRoom', { roomCode: roomCode || '', user: { id: userId, name: userName } });
 
       socket.on('roomCreated', (room: Room) => {
+        console.log('RoomPage: roomCreated event received:', room);
         setRoomState(room);
       });
 
       socket.on('userJoined', (room: Room) => {
+        console.log('RoomPage: userJoined event received:', room);
         setRoomState(room);
         console.log(`${room.users[room.users.length - 1].name} joined the room.`);
       });
