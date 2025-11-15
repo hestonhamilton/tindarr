@@ -100,9 +100,9 @@ export class RoomManager {
   }
 
   private generateRoomCode(): string {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; // Only letters
     let result = '';
-    const codeLength = 6; // e.g., 6 characters
+    const codeLength = 4; // e.g., 4 characters
     for (let i = 0; i < codeLength; i++) {
       result += characters.charAt(Math.floor(Math.random() * characters.length));
     }

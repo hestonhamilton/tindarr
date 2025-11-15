@@ -168,3 +168,9 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
 
 - [X] **Server-side (`packages/server/src/room.ts`):**
     - [X] Modify `addLikedMovie` to include a guard: if `room.users.length <= 1`, then the movie should not be added to `room.likedMovies`, even if the `allUsersLiked` condition would otherwise be met.
+
+## Feature: Generate Room Codes with Letters Only and Length 4
+
+- [X] **Server-side (`packages/server/src/room.ts`):**
+    - [X] Modify `generateRoomCode` to use only uppercase letters.
+    - [X] Set `codeLength` to 4.
