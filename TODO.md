@@ -84,6 +84,7 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
     - [X] Update `ServerToClientEvents` for `roomCreated`, `roomJoined`, and `userJoined`.
 - [X] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
     - [X] After `roomCreated` event, navigate to `/room/${roomCode}` (using the generated code).
+    - [X] Add an input field for "Join Room with Code" and a "Join Room" button.
 - [X] **Client-side (`packages/client/src/pages/Login.tsx` or a new component):**
     - [X] Add an input field for "Join Room with Code".
     - [X] Handle submission of the room code.

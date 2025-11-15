@@ -27,6 +27,7 @@ const CreateRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const { data: libraries, isLoading: isLoadingLibraries, isError: isErrorLibraries, error: errorLibraries } = usePlexLibraries();
   const [userName, setUserName] = useState<string>(''); // New state for user name
+  const [roomCodeInput, setRoomCodeInput] = useState<string>(''); // New state for room code input
   const [selectedLibraries, setSelectedLibraries] = useState<SelectedLibrary[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [yearMin, setYearMin] = useState<string>('');
@@ -182,6 +183,17 @@ const CreateRoomPage: React.FC = () => {
     } else {
       alert('Please enter your name to create a room.');
     }
+  };
+
+  const handleJoinRoom = () => {
+    if (!userName || !roomCodeInput) {
+      alert('Please enter your name and the room code.');
+      return;
+    }
+    const userId = uuidv4(); // Generate UUID for userId
+    localStorage.setItem('userId', userId); // Store userId
+    localStorage.setItem('userName', userName); // Store userName
+    navigate(`/room/${roomCodeInput}`);
   };
 
   const genreContainerMaxHeight = showAllGenres ? 'none' : '150px';
@@ -352,6 +364,22 @@ const CreateRoomPage: React.FC = () => {
       <button onClick={handleCreateRoom} disabled={selectedLibraries.length === 0 || movieCount === 0}>
         Create Room
       </button>
+
+      <hr style={{ margin: '20px 0' }} />
+
+      <h2>Join an Existing Room</h2>
+      <div>
+        <label htmlFor="roomCodeInput">Room Code:</label>
+        <input
+          type="text"
+          id="roomCodeInput"
+          value={roomCodeInput}
+          onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())} // Convert to uppercase
+          placeholder="Enter room code"
+          maxLength={6} // Assuming 6-character codes
+        />
+      </div>
+      <button onClick={handleJoinRoom} disabled={!userName || !roomCodeInput}>Join Room</button>
     </div>
   );
 };
