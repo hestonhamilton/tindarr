@@ -7,9 +7,20 @@ export interface Library {
 export interface Movie {
   key: string;
   title: string;
-  year: number;
-  summary: string;
-  posterUrl: string;
+  year?: number;
+  summary?: string;
+  posterUrl?: string;
+  tagline?: string;
+  studio?: string;
+  genres?: string[];
+  countries?: string[];
+  directors?: string[];
+  writers?: string[];
+  roles?: string[];
+  duration?: number;
+  contentRating?: string;
+  rating?: number;
+  originallyAvailableAt?: string;
 }
 
 export interface ClientToServerEvents {

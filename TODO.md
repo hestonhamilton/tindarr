@@ -1,55 +1,64 @@
-# MovieMatch v2 - TODO
+# MovieMatch Enhancements - Phase 2
 
-This document outlines the tasks required to complete the new version of MovieMatch.
+This document outlines the tasks for enhancing movie display, filtering, and sorting based on Plex metadata.
 
-**Note on Documentation:** For all libraries and technologies used in this project, please refer to the up-to-date documentation using the context7 MCP server.
+## Core Tasks
 
-## Phase 1: Project Setup & Backend MVP
+- [ ] **Implement Duration Filtering (Min/Max)**
+    - [ ] **Server-side (`packages/server/src/plex.ts`):**
+        - [ ] Modify `getMovies` to accept `durationMin` and `durationMax` parameters.
+        - [ ] Implement server-side filtering for `duration` based on `durationMin` and `durationMax`.
+        - [ ] Modify `getMoviesCount` to accept `durationMin` and `durationMax` parameters and apply filtering.
+    - [ ] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
+        - [ ] Add state variables for `durationMin` and `durationMax`.
+        - [ ] Add input fields for `durationMin` and `durationMax` to the "Create Room" UI.
+        - [ ] Pass `durationMin` and `durationMax` to `useMovieCount` and `usePlexMovies`.
+        - [ ] Implement client-side validation for `durationMin` and `durationMax` (e.g., min <= max).
+    - [ ] **Client-side (`packages/client/src/hooks/usePlexMovies.ts`):**
+        - [ ] Update `PlexMoviesParams` interface to include `durationMin` and `durationMax`.
+        - [ ] Pass `durationMin` and `durationMax` to the server's `/api/plex/movies` endpoint.
+    - [ ] **Client-side (`packages/client/src/pages/Room.tsx`):**
+        - [ ] Retrieve `durationMin` and `durationMax` from `localStorage` and pass to `usePlexMovies`.
 
--   [x] Setup monorepo with npm workspaces.
--   [x] Setup server project with Node.js, Express, and TypeScript.
--   [x] Setup client project with React, Vite, and TypeScript.
--   [ ] **Backend: Plex Authentication**
-    -   [x] Implement `getNewPin` and `getAuthToken` functions.
-    -   [x] Write unit tests for `getNewPin` and `getAuthToken`.
-    -   [ ] Create an API endpoint to initiate Plex authentication.
-    -   [ ] Create an API endpoint to check the status of the authentication and retrieve the auth token.
--   [ ] **Backend: WebSocket Communication**
-    -   [ ] Setup Socket.IO server.
-    -   [ ] Implement basic connection and disconnection handling.
--   [ ] **Backend: Room Management**
-    -   [ ] Implement logic for creating and joining rooms.
-    -   [ ] Implement logic for storing room state (e.g., in-memory or a simple database).
--   [ ] **Backend: Plex API Integration**
-    -   [ ] Implement function to get libraries from a Plex server.
-    -   [ ] Implement function to get movies from a library.
-    -   [ ] Write unit tests for Plex API integration.
+- [ ] **Implement New Sorting Options**
+    - [ ] **Server-side (`packages/server/src/plex.ts`):**
+        - [ ] Modify `getMovies` sorting logic to handle:
+            - `duration:asc` / `duration:desc`
+            - `rating:asc` / `rating:desc` (critic score)
+            - `audienceRating:asc` / `audienceRating:desc` (audience score)
+    - [ ] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
+        - [ ] Update `SORT_OPTIONS` to include new duration, critic rating, and audience rating sorting choices.
+        - [ ] Ensure `sortOrder` is correctly passed to `useMovieCount` and `usePlexMovies`.
 
-## Phase 2: Frontend MVP
+- [ ] **Display Enhanced Movie Details on Voting Screen (`packages/client/src/pages/Room.tsx`)**
+    - [ ] **Update `Movie` interface (if not already done):** Ensure `tagline`, `duration`, `rating`, `audienceRating`, `studio`, `genres`, `countries`, `directors`, `writers`, `roles` are available. (Already done in previous step for `types.ts`).
+    - [ ] Display `tagline`.
+    - [ ] Display `duration` (formatted, e.g., "1h 40m").
+    - [ ] Display `rating` (critic score) with an IMDb icon.
+    - [ ] Display `audienceRating` (audience score) with a Rotten Tomatoes icon.
+    - [ ] Consider displaying `studio`, `genres`, `countries`, `directors`, `writers`, `roles` if space permits and it enhances the UX.
 
--   [ ] **Frontend: Plex Authentication**
-    -   [ ] Create a login page.
-    -   [ ] Implement the flow for a user to log in with their Plex account.
--   [ ] **Frontend: Room Creation**
-    -   [ ] Create a "Create Room" page.
-    -   [ ] Implement UI for selecting Plex libraries and setting filters.
-    -   [ ] Implement the "preview" feature to show the number of matching movies.
--   [ ] **Frontend: Movie Swiping**
-    -   [ ] Create the main "Room" page.
-    -   [ ] Implement the Tinder-style swiping interface for movies.
-    -   [ ] Implement real-time updates for movie likes.
--   [ ] **Frontend: Matching**
-    -   [ ] Implement the "Match" screen to show matched movies.
+## Pre-requisite/Cleanup Tasks
 
-## Phase 3: Integration & Deployment
+- [ ] **Update `PlexMovieResponse.Metadata` interface (`packages/server/src/plex.ts`):**
+    - [ ] Add `tagline?: string;`
+    - [ ] Add `studio?: string;`
+    - [ ] Add `duration?: number;`
+    - [ ] Add `Genre?: { tag: string }[];`
+    - [ ] Add `Country?: { tag: string }[];`
+    - [ ] Add `Director?: { tag: string }[];`
+    - [ ] Add `Writer?: { tag: string }[];`
+    - [ ] Add `Role?: { tag: string }[];`
+    - [ ] Add `audienceRating?: number;`
+    - [ ] Add `audienceRatingImage?: string;` (for Rotten Tomatoes icon)
+    - [ ] Add `ratingImage?: string;` (for IMDb icon)
+- [ ] **Update `Movie` interface (`packages/server/src/types.ts` and `packages/client/src/types.ts`):**
+    - [ ] Ensure all new fields from `PlexMovieResponse.Metadata` are reflected in the `Movie` interface, converting tag arrays to `string[]` where appropriate. (Already done for `types.ts`).
+- [ ] **Modify `getMovies` mapping (`packages/server/src/plex.ts`):**
+    - [ ] Map all new fields from `PlexMovieResponse.Metadata` to the `Movie` object.
 
--   [ ] Connect frontend and backend.
--   [ ] Create a `Dockerfile` for the application.
--   [ ] Create a `docker-compose.yml` for easy local development and deployment.
--   [ ] Write E2E tests.
+## Icons for Ratings
 
-## Phase 4: Polish & Refinements
-
--   [ ] Implement user feedback and bug fixes.
--   [ ] Add more advanced filtering options.
--   [ ] Improve the UI/UX.
+- [ ] **Client-side (`packages/client/public` or `src/assets`):**
+    - [ ] Source appropriate IMDb and Rotten Tomatoes icons (SVG or PNG).
+    - [ ] Integrate icons into `Room.tsx` for displaying ratings.

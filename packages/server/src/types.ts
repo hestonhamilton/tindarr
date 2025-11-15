@@ -38,9 +38,20 @@ export interface ClientToServerEvents {
 export interface Movie {
   key: string;
   title: string;
-  year: number;
-  summary: string;
-  posterUrl: string;
+  year?: number; // Made optional as some movies might not have it
+  summary?: string; // Made optional
+  posterUrl?: string; // Made optional
+  tagline?: string; // New
+  studio?: string; // New
+  genres?: string[]; // New, simplified from { tag: string }[]
+  countries?: string[]; // New, simplified
+  directors?: string[]; // New, simplified
+  writers?: string[]; // New, simplified (for main actors)
+  roles?: string[]; // New, simplified (for main actors)
+  duration?: number; // New (in milliseconds)
+  contentRating?: string; // Already added, but ensuring it's here
+  rating?: number; // Already added, but ensuring it's here
+  originallyAvailableAt?: string; // Already added, but ensuring it's here
 }
 
 export interface SelectedLibrary {
