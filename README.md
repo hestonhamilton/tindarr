@@ -36,49 +36,88 @@ This project is structured as a monorepo using npm workspaces.
 
 #### Prerequisites
 
--   [Node.js](https://nodejs.org/en/) (v18 or higher recommended)
--   [npm](https://www.npmjs.com/) (comes with Node.js)
--   [Docker](https://www.docker.com/products/docker-desktop) & [Docker Compose](https://docs.docker.com/compose/install/) (for easy local development)
+-   [Node.js](https://nodejs.org/) 18+ and npm 9+ (ships with Node)
+-   [Docker](https://www.docker.com/products/docker-desktop) & [Docker Compose](https://docs.docker.com/compose/install/) if you prefer containerized development
 
 #### Installation
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-repo/moviematch.git
+    git clone https://github.com/hestonhamilton/moviematch.git
     cd moviematch
     ```
-2.  **Install root dependencies:**
+2.  **Install dependencies (root command uses npm workspaces):**
     ```bash
     npm install
     ```
-    This will install dependencies for both `packages/client` and `packages/server`.
 
-#### Running the Application (Development Mode with Docker Compose)
+#### Local configuration
 
-The easiest way to get the application running for development is using Docker Compose. This will build the client and server, and set up live reloading.
+Create `.env` files based on the included examples:
 
-1.  **Build and run the services:**
-    ```bash
-    docker-compose up --build
+-   `packages/server/.env` (copy from `.env.example`)
+    ```ini
+    PLEX_URL=http://localhost:32400
+    PLEX_TOKEN=replace-with-plex-token
+    FRONTEND_ORIGIN=http://localhost:5173
+    PORT=3001
     ```
-    -   The **server** will be accessible at `http://localhost:3001`.
-    -   The **client** (frontend) will be accessible at `http://localhost:5173`.
+-   `packages/client/.env` (copy from `.env.example`)
+    ```ini
+    VITE_BACKEND_URL=http://localhost:3001
+    ```
 
-2.  **Access the application:** Open your web browser and navigate to `http://localhost:5173`.
+Never commit real tokens—GitHub Actions runs [Gitleaks](https://github.com/gitleaks/gitleaks) to enforce this.
+
+Additional deep dives are available in:
+
+- [`docs/configuration.md`](docs/configuration.md) – comprehensive environment variable reference
+- [`docs/docker-compose.md`](docs/docker-compose.md) – container-based workflow
+- [`docs/reverse-proxy.md`](docs/reverse-proxy.md) – examples for fronting MovieMatch with Nginx/Traefik/Apache
+
+#### Running the application (Node dev servers)
+
+Start both workspaces from the repo root:
+```bash
+npm run dev
+```
+This runs `npm run dev` inside the server (Express + Socket.IO on `http://localhost:3001`) and the client (Vite dev server on `http://localhost:5173`) simultaneously. Hot reload is enabled for both packages.
+
+#### Running with Docker Compose
+
+A Compose file mirrors the manual setup and is helpful for contributors who want isolation or are testing Vite builds:
+
+```bash
+docker compose up --build
+```
+
+-   Client: `http://localhost:5173`
+-   Server API/WebSocket: `http://localhost:3001`
+
+Environment variables can be supplied via shell exports or an `.env` file in the repo root. Common overrides:
+
+```bash
+FRONTEND_ORIGIN=http://192.168.1.50:5173 \
+PLEX_URL=http://192.168.1.20:32400 \
+PLEX_TOKEN=your-token \
+docker compose up --build
+```
 
 #### Running Tests
 
--   **Server Unit Tests:**
+-   **Server (Jest):**
     ```bash
     npm test --workspace=packages/server
     ```
--   **Client E2E Tests (Playwright):**
-    1.  Ensure the client and server are running (e.g., via `docker-compose up`).
-    2.  Run Playwright tests:
-        ```bash
-        npm test --workspace=packages/client -- e2e/login.spec.ts # Or specify other test files
-        ```
-        *(Note: The current E2E test for login is a simplified check and might require mocking Plex authentication for full automation.)*
+-   **Client (Vitest unit tests):**
+    ```bash
+    npm test --workspace=packages/client
+    ```
+-   **Client Playwright E2E:** ensure both services are running (locally or via Docker) then execute:
+    ```bash
+    npm test --workspace=packages/client -- e2e/login.spec.ts
+    ```
+    *These specs currently assume localhost hosts and may need Plex login stubs for automation.*
 
 ### Project Structure
 
