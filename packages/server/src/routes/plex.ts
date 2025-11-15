@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getLibraries, getMoviesCount, getMovies, getGenres, getLibraryYearRange } from '../plex'; // Import getLibraryYearRange
+import { getLibraries, getMoviesCount, getMovies, getGenres, getLibraryYearRange, getContentRatings } from '../plex';
 import { Movie, SelectedLibrary } from '../types'; // Import SelectedLibrary
 
 const router = Router();
@@ -78,37 +78,22 @@ router.get('/movies/count', async (req, res) => {
   try {
     const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating } = req.query;
 
-    console.log(`[Server] Received request for /movies/count with:`); // Added log
-    console.log(`[Server]   plexUrl: ${plexUrl}`); // Added log
-    console.log(`[Server]   plexToken: ${plexToken ? '[REDACTED]' : 'N/A'}`); // Added log
-    console.log(`[Server]   selectedLibraries: ${selectedLibraries}`); // Added log
-    console.log(`[Server]   genre: ${genre}`); // Added log
-    console.log(`[Server]   yearMin: ${yearMin}`); // Added log
-    console.log(`[Server]   yearMax: ${yearMax}`); // Added log
-    console.log(`[Server]   contentRating: ${contentRating}`); // Added log
-
-
     if (!plexUrl || !plexToken || !selectedLibraries) {
-      console.error('[Server] Missing required parameters for /movies/count'); // Added log
       return res.status(400).json({ error: 'Plex URL, token, and selectedLibraries are required.' });
     }
 
     let parsedSelectedLibraries: SelectedLibrary[];
     try {
       parsedSelectedLibraries = JSON.parse(selectedLibraries as string);
-      console.log(`[Server] Parsed selectedLibraries: ${JSON.stringify(parsedSelectedLibraries)}`); // Added log
       if (!Array.isArray(parsedSelectedLibraries) || parsedSelectedLibraries.length === 0) {
-        console.error('[Server] Invalid or empty selectedLibraries array after parsing.'); // Added log
         return res.status(400).json({ error: 'Invalid or empty selectedLibraries parameter.' });
       }
     } catch (parseError) {
-      console.error(`[Server] Failed to parse selectedLibraries JSON: ${parseError}`); // Added log
       return res.status(400).json({ error: 'Invalid JSON for selectedLibraries parameter.' });
     }
 
     let totalCount = 0;
     for (const lib of parsedSelectedLibraries) {
-      console.log(`[Server] Calling getMoviesCount for library ${lib.key} (type: ${lib.type})`); // Added log
       const count = await getMoviesCount(
         plexUrl as string,
         plexToken as string,
@@ -120,13 +105,11 @@ router.get('/movies/count', async (req, res) => {
         contentRating as string
       );
       totalCount += count;
-      console.log(`[Server] Count for library ${lib.key}: ${count}. Current total: ${totalCount}`); // Added log
     }
 
-    console.log(`[Server] Final total movie count: ${totalCount}`); // Added log
     res.json({ count: totalCount });
   } catch (error) {
-    console.error(`[Server] Failed to get movies count: ${error}`); // Added log
+    console.error(`[Server] Failed to get movies count: ${error}`);
     res.status(500).json({ error: 'Failed to get movies count.' });
   }
 });
@@ -202,6 +185,39 @@ router.get('/genres', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to get genres.' });
+  }
+});
+
+router.get('/contentRatings', async (req, res) => {
+  try {
+    const { plexUrl, plexToken, libraryKeys } = req.query;
+
+    if (!plexUrl || !plexToken || !libraryKeys) {
+      return res.status(400).json({ error: 'Plex URL, token, and library keys are required.' });
+    }
+
+    let libraryKeysArray: string[] = [];
+    if (typeof libraryKeys === 'string') {
+      libraryKeysArray = libraryKeys.split(',');
+    } else if (Array.isArray(libraryKeys)) {
+      libraryKeysArray = libraryKeys as string[];
+    } else {
+      return res.status(400).json({ error: 'Invalid libraryKeys parameter.' });
+    }
+
+    if (libraryKeysArray.length === 0 || (libraryKeysArray.length === 1 && libraryKeysArray[0] === '')) {
+      return res.status(400).json({ error: 'At least one library key is required.' });
+    }
+
+    const contentRatings = await getContentRatings(
+      plexUrl as string,
+      plexToken as string,
+      libraryKeysArray
+    );
+    res.json(contentRatings);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to get content ratings.' });
   }
 });
 

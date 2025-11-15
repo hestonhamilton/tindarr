@@ -40,6 +40,7 @@ interface PlexMovieResponse {
       year: number;
       summary: string;
       thumb: string;
+      contentRating?: string; // Added contentRating
     }[];
   };
 }
@@ -172,10 +173,10 @@ export async function getLibraryYearRange(
     }
 
     if (minYear !== undefined && maxYear !== undefined) {
-      console.log(`[Plex] Successfully determined year range for library ${libraryKey}: ${minYear}-${maxYear}`); // Added log
+      console.log(`[Plex] Successfully determined year range for library ${libraryKey}: ${minYear}-${maxYear}`);
       return { minYear, maxYear };
     } else {
-      console.warn(`[Plex] Could not determine full year range for library ${libraryKey}. MinYear: ${minYear}, MaxYear: ${maxYear}`); // Added log
+      console.warn(`[Plex] Could not determine full year range for library ${libraryKey}. MinYear: ${minYear}, MaxYear: ${maxYear}`);
     }
   } catch (error: any) {
     console.error(`Failed to get year range for library ${libraryKey}:`, error.message);
@@ -205,7 +206,6 @@ export async function getMovies(
   if (contentRating) params.contentRating = contentRating;
 
   const requestUrl = `${plexUrl}/library/sections/${libraryKey}/all`;
-  console.log(`[Plex] Fetching movies from ${requestUrl} with params: ${JSON.stringify(params)} (year filters will be applied server-side)`); // Added log
 
   try {
     const response = await axios.get<PlexMovieResponse>(requestUrl, {
@@ -216,7 +216,6 @@ export async function getMovies(
       params,
     });
 
-    console.log(`[Plex] Movies response for library ${libraryKey}: ${JSON.stringify(response.data)}`); // Added log
     if (response.data && response.data.MediaContainer && response.data.MediaContainer.Metadata) {
       let filteredMetadata = response.data.MediaContainer.Metadata;
 
@@ -227,8 +226,6 @@ export async function getMovies(
       if (yearMax !== undefined) {
         filteredMetadata = filteredMetadata.filter(movie => movie.year !== undefined && movie.year <= yearMax);
       }
-
-      console.log(`[Plex] Number of movies for library ${libraryKey} after server-side year filters: ${filteredMetadata.length}`); // Added log
 
       const movies = filteredMetadata.map((movie) => ({
         key: movie.ratingKey,
@@ -298,6 +295,48 @@ export async function getGenres(
   return Array.from(allGenres).sort();
 }
 
+export async function getContentRatings(
+  plexUrl: string,
+  plexToken: string,
+  libraryKeys: string[]
+): Promise<string[]> {
+  const allContentRatings = new Set<string>();
+
+  for (const libraryKey of libraryKeys) {
+    try {
+      const requestUrl = `${plexUrl}/library/sections/${libraryKey}/all`;
+
+      const response = await axios.get<PlexMovieResponse>(requestUrl, {
+        headers: {
+          'X-Plex-Token': plexToken,
+          'Accept': 'application/json',
+        },
+        params: {
+          type: getPlexTypeInteger('movie'),
+        },
+      });
+
+      if (response.data && response.data.MediaContainer && response.data.MediaContainer.Metadata) {
+        response.data.MediaContainer.Metadata.forEach(movie => {
+          if (movie.contentRating) {
+            allContentRatings.add(movie.contentRating);
+          }
+        });
+      } else {
+        console.warn(`[Plex] No movies found or unexpected response for content ratings in library ${libraryKey}.`);
+      }
+    } catch (error: any) {
+      console.error(`[Plex] Failed to get content ratings for library ${libraryKey}:`, error.message);
+      if (error.response) {
+        console.error(`[Plex] Plex API response status: ${error.response.status}`);
+        console.error(`[Plex] Plex API response data: ${JSON.stringify(error.response.data)}`);
+      }
+    }
+  }
+
+  return Array.from(allContentRatings).sort();
+}
+
 export async function getMoviesCount(
   plexUrl: string,
   plexToken: string,
@@ -315,7 +354,6 @@ export async function getMoviesCount(
   if (contentRating) params.contentRating = contentRating;
 
   const requestUrl = `${plexUrl}/library/sections/${libraryKey}/all`;
-  console.log(`[Plex] Fetching movie count from ${requestUrl} with params: ${JSON.stringify(params)} (year filters will be applied server-side)`); // Modified log
 
   try {
     const response = await axios.get<PlexMovieResponse>(requestUrl, {
@@ -326,7 +364,6 @@ export async function getMoviesCount(
       params,
     });
 
-    console.log(`[Plex] Movie count response for library ${libraryKey}: ${JSON.stringify(response.data)}`);
     if (response.data && response.data.MediaContainer && response.data.MediaContainer.Metadata) {
       let filteredMovies = response.data.MediaContainer.Metadata;
 
@@ -338,7 +375,6 @@ export async function getMoviesCount(
         filteredMovies = filteredMovies.filter(movie => movie.year !== undefined && movie.year <= yearMax);
       }
 
-      console.log(`[Plex] Movie count for library ${libraryKey} after server-side year filters: ${filteredMovies.length}`); // Modified log
       return filteredMovies.length;
     }
   } catch (error: any) {

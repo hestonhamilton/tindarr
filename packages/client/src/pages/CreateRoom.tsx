@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react'; // Import useEffect
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlexLibraries } from '../hooks/usePlexLibraries';
 import { useMovieCount } from '../hooks/useMovieCount';
 import { usePlexGenres } from '../hooks/usePlexGenres';
-import { usePlexYearRange } from '../hooks/usePlexYearRange'; // Import usePlexYearRange
+import { usePlexYearRange } from '../hooks/usePlexYearRange';
+import { usePlexContentRatings } from '../hooks/usePlexContentRatings';
 import { Library, SelectedLibrary } from '../types';
 
 const CreateRoomPage: React.FC = () => {
@@ -13,14 +14,22 @@ const CreateRoomPage: React.FC = () => {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [yearMin, setYearMin] = useState<string>('');
   const [yearMax, setYearMax] = useState<string>('');
-  const [contentRating, setContentRating] = useState<string>('');
+  const [selectedContentRatings, setSelectedContentRatings] = useState<string[]>([]); // New state for content ratings
   const [showAllGenres, setShowAllGenres] = useState(false);
+  const [showAllContentRatings, setShowAllContentRatings] = useState(false); // New state for show/hide content ratings
 
   // Fetch genres based on selected libraries
   const { data: genres, isLoading: isLoadingGenres, isError: isErrorGenres, error: errorGenres } = usePlexGenres({
     plexUrl: localStorage.getItem('plexUrl') || '',
     plexToken: localStorage.getItem('plexToken') || '',
     libraryKeys: selectedLibraries.map(lib => lib.key),
+  });
+
+  // Fetch content ratings based on selected libraries
+  const { data: contentRatings, isLoading: isLoadingContentRatings, isError: isErrorContentRatings, error: errorContentRatings } = usePlexContentRatings({
+    plexUrl: localStorage.getItem('plexUrl') || '',
+    plexToken: localStorage.getItem('plexToken') || '',
+    selectedLibraries: selectedLibraries,
   });
 
   // Fetch movie count based on selected libraries and filters
@@ -31,7 +40,7 @@ const CreateRoomPage: React.FC = () => {
     genre: selectedGenres.join(',') || undefined,
     yearMin: yearMin ? parseInt(yearMin, 10) : undefined,
     yearMax: yearMax ? parseInt(yearMax, 10) : undefined,
-    contentRating: contentRating || undefined,
+    contentRating: selectedContentRatings.join(',') || undefined, // Use selectedContentRatings
   });
 
   // Fetch year range for selected libraries
@@ -61,9 +70,10 @@ const CreateRoomPage: React.FC = () => {
 
     setSelectedLibraries((prevSelected) => {
       const newSelected = checked
-        ? [...prevSelected, { key: library.key, type: library.type }] // Store key and type
+        ? [...prevSelected, { key: library.key, type: library.type }]
         : prevSelected.filter((lib) => lib.key !== value);
       setSelectedGenres([]);
+      setSelectedContentRatings([]); // Clear content ratings when libraries change
       return newSelected;
     });
   };
@@ -74,6 +84,15 @@ const CreateRoomPage: React.FC = () => {
       checked
         ? [...prevSelected, value]
         : prevSelected.filter((genreName) => genreName !== value)
+    );
+  };
+
+  const handleContentRatingChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = event.target;
+    setSelectedContentRatings((prevSelected) =>
+      checked
+        ? [...prevSelected, value]
+        : prevSelected.filter((rating) => rating !== value)
     );
   };
 
@@ -96,12 +115,14 @@ const CreateRoomPage: React.FC = () => {
   const handleCreateRoom = () => {
     localStorage.setItem('selectedLibraries', JSON.stringify(selectedLibraries));
     localStorage.setItem('selectedGenres', JSON.stringify(selectedGenres));
+    localStorage.setItem('selectedContentRatings', JSON.stringify(selectedContentRatings)); // Save content ratings
 
     const placeholderRoomId = 'test-room-123';
     navigate(`/room/${placeholderRoomId}`);
   };
 
   const genreContainerMaxHeight = showAllGenres ? 'none' : '150px';
+  const contentRatingContainerMaxHeight = showAllContentRatings ? 'none' : '150px'; // New for content ratings
 
   if (isLoadingLibraries) {
     return <div>Loading libraries...</div>;
@@ -160,13 +181,45 @@ const CreateRoomPage: React.FC = () => {
         )}
       </div>
 
+      {/* New Content Rating Section */}
+      <div>
+        <h3>Content Ratings</h3>
+        {selectedLibraries.length === 0 ? (
+          <p>Select libraries to see available content ratings.</p>
+        ) : (
+          <>
+            {isLoadingContentRatings && <div>Loading content ratings...</div>}
+            {isErrorContentRatings && <div>Error loading content ratings: {errorContentRatings?.message}</div>}
+            <div style={{ maxHeight: contentRatingContainerMaxHeight, overflowY: 'auto', border: '1px solid #ccc', padding: '5px' }}>
+              {contentRatings?.map((ratingName: string) => (
+                <div key={ratingName} style={{ marginBottom: '5px' }}>
+                  <input
+                    type="checkbox"
+                    id={`content-rating-${ratingName}`}
+                    value={ratingName}
+                    checked={selectedContentRatings.includes(ratingName)}
+                    onChange={handleContentRatingChange}
+                  />
+                  <label htmlFor={`content-rating-${ratingName}`}>{ratingName}</label>
+                </div>
+              ))}
+            </div>
+            {contentRatings && contentRatings.length > 0 && (
+              <button onClick={() => setShowAllContentRatings(!showAllContentRatings)} style={{ marginTop: '10px' }}>
+                {showAllContentRatings ? 'Show Less' : 'Show More'}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
       <div>
         <label htmlFor="yearMin">Year Min:</label>
         <input
           type="number"
           id="yearMin"
           value={yearMin}
-          onChange={handleYearMinChange} // Use new handler
+          onChange={handleYearMinChange}
         />
       </div>
       <div>
@@ -175,18 +228,11 @@ const CreateRoomPage: React.FC = () => {
           type="number"
           id="yearMax"
           value={yearMax}
-          onChange={handleYearMaxChange} // Use new handler
+          onChange={handleYearMaxChange}
         />
       </div>
-      <div>
-        <label htmlFor="contentRating">Content Rating:</label>
-        <input
-          type="text"
-          id="contentRating"
-          value={contentRating}
-          onChange={(e) => setContentRating(e.target.value)}
-        />
-      </div>
+      {/* Removed old contentRating input field */}
+
 
       <h2>Movie Count Preview</h2>
       {isLoadingMovieCount && <div>Loading movie count...</div>}
@@ -201,5 +247,6 @@ const CreateRoomPage: React.FC = () => {
 };
 
 export default CreateRoomPage;
+
 
 
