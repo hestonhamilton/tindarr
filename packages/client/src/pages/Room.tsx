@@ -118,7 +118,7 @@ const RoomPage: React.FC = () => {
           });
           // Parse XML response to get machineIdentifier
           const parser = new DOMParser();
-          const xmlDoc = parser.parseFromString(response.data, 'text/xml');
+          const xmlDoc = parser.parseFromString(response.data as string, 'text/xml');
           const machineIdentifier = xmlDoc.documentElement.getAttribute('machineIdentifier');
           if (machineIdentifier) {
             setPlexServerId(machineIdentifier);

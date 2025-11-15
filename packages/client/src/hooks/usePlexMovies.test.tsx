@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import axios from 'axios';
 import type { PropsWithChildren } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useMovieCount } from './useMovieCount';
+import { usePlexMovies } from './usePlexMovies';
 
 vi.mock('axios');
 const mockedAxios = vi.mocked(axios, true);
@@ -24,21 +24,21 @@ const createWrapper = () => {
   return { wrapper: Wrapper, queryClient };
 };
 
-describe('useMovieCount', () => {
+describe('usePlexMovies', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('requests counts with selected libraries and filters applied', async () => {
-    mockedAxios.get.mockResolvedValue({
-      data: { count: 7 },
-    } as any);
+  it('fetches movies using selected libraries and filters', async () => {
     const libraries = [{ key: '1', type: 'movie' as const }];
-    const { wrapper, queryClient } = createWrapper();
+    mockedAxios.get.mockResolvedValue({
+      data: [{ key: 'abc', title: 'Test Movie' }],
+    } as any);
 
+    const { wrapper, queryClient } = createWrapper();
     const { result } = renderHook(
       () =>
-        useMovieCount({
+        usePlexMovies({
           plexUrl: 'http://localhost:32400',
           plexToken: 'token',
           selectedLibraries: libraries,
@@ -48,13 +48,16 @@ describe('useMovieCount', () => {
           contentRating: 'PG-13',
           durationMin: 600000,
           durationMax: 900000,
+          sortOrder: 'duration:asc',
         }),
       { wrapper }
     );
 
-    await waitFor(() => expect(result.current.data).toBe(7));
+    await waitFor(() =>
+      expect(result.current.data).toEqual([{ key: 'abc', title: 'Test Movie' }])
+    );
 
-    expect(mockedAxios.get).toHaveBeenCalledWith('/api/plex/movies/count', {
+    expect(mockedAxios.get).toHaveBeenCalledWith('/api/plex/movies', {
       params: {
         plexUrl: 'http://localhost:32400',
         plexToken: 'token',
@@ -65,18 +68,19 @@ describe('useMovieCount', () => {
         contentRating: 'PG-13',
         durationMin: 600000,
         durationMax: 900000,
+        sortOrder: 'duration:asc',
       },
     });
 
     queryClient.clear();
   });
 
-  it('skips fetching when no libraries are selected', async () => {
+  it('returns empty array when libraries are missing', async () => {
     const { wrapper, queryClient } = createWrapper();
 
-    renderHook(
+    const { result } = renderHook(
       () =>
-        useMovieCount({
+        usePlexMovies({
           plexUrl: 'http://localhost:32400',
           plexToken: 'token',
           selectedLibraries: [],
@@ -84,7 +88,8 @@ describe('useMovieCount', () => {
       { wrapper }
     );
 
-    await waitFor(() => expect(mockedAxios.get).not.toHaveBeenCalled());
+    await waitFor(() => expect(result.current.data).toBeUndefined());
+    expect(mockedAxios.get).not.toHaveBeenCalled();
     queryClient.clear();
   });
 });

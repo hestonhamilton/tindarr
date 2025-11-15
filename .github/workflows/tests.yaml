@@ -1,49 +1,36 @@
-name: Tests
+name: Node CI
 
 on:
   push:
-    branches: ["**"]
+    branches: ['**']
   pull_request:
-    branches: ["**"]
+    branches: ['**']
   workflow_dispatch:
 
-env:
-  DENO_VERSION: 1.10.1
-
 jobs:
-  test:
-    name: Test
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup Just
-        uses: extractions/setup-just@v1
-      - name: Setup Deno
-        uses: denolib/setup-deno@v2
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          deno-version: ${{ env.DENO_VERSION }}
-      - run: just install
-        name: Install dependencies
-      - run: just lint
-        name: Lint
-      - run: just test
-        name: Unit Tests
-        env:
-          TEST_PLEX_URL: ${{ secrets.TEST_PLEX_URL }}
-          TEST_PLEX_TOKEN: ${{ secrets.TEST_PLEX_TOKEN }}
-      - run: |
-          just build-binary linux-amd64
-          just test-e2e linux-amd64
-        name: E2E Tests
-        if: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
-        env:
-          PLEX_URL: ${{ secrets.TEST_PLEX_URL }}
-          PLEX_TOKEN: ${{ secrets.TEST_PLEX_TOKEN }}
-      - name: Upload screenshots on failure
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') }}
-        with:
-          name: screenshots
-          path: ./screenshots
-          retention-days: 1
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Server unit tests
+        run: npm test --workspace=packages/server
+
+      - name: Client unit tests
+        run: npm test --workspace=packages/client
+
+      - name: Build client
+        run: npm run build --workspace=packages/client
+
+      - name: Build server
+        run: npm run build --workspace=packages/server
