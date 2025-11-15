@@ -5,7 +5,7 @@ import { useMovieCount } from '../hooks/useMovieCount';
 import { usePlexGenres } from '../hooks/usePlexGenres';
 import { usePlexYearRange } from '../hooks/usePlexYearRange';
 import { usePlexContentRatings } from '../hooks/usePlexContentRatings';
-import { Library, SelectedLibrary, Room } from '../types'; // Import Room
+import { Library, SelectedLibrary } from '../types';
 import { useSocket } from '../hooks/useSocket'; // Import useSocket
 
 // Define sorting options

@@ -63,7 +63,7 @@ describe('Socket.IO server', () => {
       const user2: User = { id: '2', name: 'test2' };
       const client2 = Client(`http://localhost:${port}`);
       client2.on('connect', () => {
-        (client2 as ClientSocket<ServerToClientEvents, ClientToServerEvents>).emit('joinRoom', { roomId: room.id, user: user2 });
+        (client2 as ClientSocket<ServerToClientEvents, ClientToServerEvents>).emit('joinRoom', { roomCode: room.code, user: user2 });
       });
       io.on('connection', (socket) => {
         socket.on('joinRoom', () => {
@@ -102,7 +102,7 @@ describe('Socket.IO server', () => {
 
   it('should emit roomNotFound if room does not exist', (done) => {
     const user: User = { id: '1', name: 'test' };
-    clientSocket.emit('joinRoom', { roomId: 'non-existent-room', user });
+    clientSocket.emit('joinRoom', { roomCode: 'non-existent-room', user });
     clientSocket.on('roomNotFound', () => {
       done();
     });

@@ -60,7 +60,7 @@ describe('RoomManager', () => {
 
       roomManager.leaveRoom(room.id, user.id);
 
-      const deletedRoom = roomManager.getRoom(room.id);
+      const deletedRoom = roomManager.getRoomById(room.id);
       expect(deletedRoom).toBeUndefined();
     });
 
