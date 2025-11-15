@@ -1,6 +1,6 @@
 # Configuration Reference
 
-MovieMatch relies on a handful of environment variables. Use the `.env.example` files included in each workspace as a starting point and never check in real secrets—our CI pipeline runs Gitleaks to catch mistakes.
+Tindarr relies on a handful of environment variables. Use the `.env.example` files included in each workspace as a starting point and never check in real secrets—our CI pipeline runs Gitleaks to catch mistakes.
 
 ## Server (`packages/server/.env`)
 
@@ -24,7 +24,7 @@ PORT=3001
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `VITE_BACKEND_URL` | URL of the MovieMatch server (used by the browser). | `http://localhost:3001` |
+| `VITE_BACKEND_URL` | URL of the Tindarr server (used by the browser). | `http://localhost:3001` |
 
 Example:
 

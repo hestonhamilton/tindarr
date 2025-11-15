@@ -1,7 +1,7 @@
 {
-  "name": "moviematch-v2",
+  "name": "tindarr",
   "version": "1.0.0",
-  "description": "A modern remake of MovieMatch",
+  "description": "Collaborative Plex movie picker inspired by MovieMatch",
   "main": "index.js",
   "private": true,
   "workspaces": [

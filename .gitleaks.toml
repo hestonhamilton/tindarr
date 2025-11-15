@@ -1,4 +1,4 @@
-title = "moviematch secret scan"
+title = "tindarr secret scan"
 
 [extend]
 useDefault = true

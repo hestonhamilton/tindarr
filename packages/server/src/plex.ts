@@ -58,8 +58,8 @@ export async function getNewPin(): Promise<Pin> {
     null,
     {
       headers: {
-        'X-Plex-Product': 'MovieMatch',
-        'X-Plex-Client-Identifier': 'moviematch-v2',
+        'X-Plex-Product': 'Tindarr',
+        'X-Plex-Client-Identifier': 'tindarr',
         'Accept': 'application/json',
       },
     }
@@ -77,7 +77,7 @@ export async function getAuthToken(pinId: number): Promise<string | null> {
       const response = await axios.get<{ authToken: string; code: string; id: number; product: string; trusted: boolean; expiresAt: string; createdAt: string; clientIdentifier: string; newRegistration: boolean; }>
       (`${PLEX_API_BASE_URL}/pins/${pinId}`, {
         headers: {
-          'X-Plex-Client-Identifier': 'moviematch-v2',
+          'X-Plex-Client-Identifier': 'tindarr',
           'Accept': 'application/json',
         },
       });

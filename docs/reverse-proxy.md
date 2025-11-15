@@ -1,6 +1,6 @@
 # Reverse Proxy Configuration
 
-Running MovieMatch behind an existing HTTP reverse proxy lets you reuse TLS certificates and expose a single domain. The frontend and backend both speak HTTP/WebSocket, so any modern proxy (Nginx, Caddy, Traefik, HAProxy, Apache) works once headers are configured.
+Running Tindarr behind an existing HTTP reverse proxy lets you reuse TLS certificates and expose a single domain. The frontend and backend both speak HTTP/WebSocket, so any modern proxy (Nginx, Caddy, Traefik, HAProxy, Apache) works once headers are configured.
 
 ## Requirements
 
@@ -15,7 +15,7 @@ Serve both the API and client through the same Nginx instance:
 ```nginx
 server {
   listen 80;
-  server_name moviematch.example.com;
+  server_name tindarr.example.com;
 
   location / {
     proxy_pass http://127.0.0.1:5173/;
@@ -33,33 +33,33 @@ server {
 }
 ```
 
-In this configuration the Vite client handles API calls via `VITE_BACKEND_URL=https://moviematch.example.com`, and the proxy routes `/socket.io` to the server. If you host the built client statically, point `proxy_pass` to the Node server instead.
+In this configuration the Vite client handles API calls via `VITE_BACKEND_URL=https://tindarr.example.com`, and the proxy routes `/socket.io` to the server. If you host the built client statically, point `proxy_pass` to the Node server instead.
 
 ## Traefik example
 
 ```yaml
 http:
   routers:
-    moviematch:
-      rule: Host(`moviematch.example.com`)
+    tindarr:
+      rule: Host(`tindarr.example.com`)
       entryPoints: ["websecure"]
-      service: moviematch
+      service: tindarr
       tls:
         certResolver: letsencrypt
   services:
-    moviematch:
+    tindarr:
       loadBalancer:
         servers:
-          - url: http://moviematch-server:3001
+          - url: http://tindarr-server:3001
 ```
 
-Traefik automatically forwards WebSocket headers. Point Vite’s `VITE_BACKEND_URL` at `https://moviematch.example.com`.
+Traefik automatically forwards WebSocket headers. Point Vite’s `VITE_BACKEND_URL` at `https://tindarr.example.com`.
 
 ## Apache
 
 ```apache
 <VirtualHost *:80>
-  ServerName moviematch.example.com
+  ServerName tindarr.example.com
 
   ProxyPreserveHost On
   ProxyPass /socket.io/ http://127.0.0.1:3001/socket.io/

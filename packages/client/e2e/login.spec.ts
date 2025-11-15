@@ -4,7 +4,7 @@ test('Plex login flow', async ({ page }) => {
   await page.goto('http://localhost:5173'); // Assuming client runs on port 5173
 
   // Expect a title "to contain" a substring.
-  await expect(page).toHaveTitle(/MovieMatch/);
+  await expect(page).toHaveTitle(/Tindarr/);
 
   // Click the "Login with Plex" button.
   await page.getByRole('button', { name: 'Login with Plex' }).click();

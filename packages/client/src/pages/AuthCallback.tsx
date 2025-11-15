@@ -15,7 +15,7 @@ const AuthCallback: React.FC = () => {
 
   return (
     <div>
-      <p>Plex authentication complete. Returning to MovieMatch...</p>
+      <p>Plex authentication complete. Returning to Tindarr...</p>
     </div>
   );
 };

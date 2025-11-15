@@ -1,6 +1,6 @@
 # Docker Compose Development Guide
 
-Containerizing the client and server makes it easy to get MovieMatch running with a single command. The Compose file in the repo root mirrors the local Node workflows while wiring all required environment variables.
+Containerizing the client and server makes it easy to get Tindarr running with a single command. The Compose file in the repo root mirrors the local Node workflows while wiring all required environment variables.
 
 ## Services
 

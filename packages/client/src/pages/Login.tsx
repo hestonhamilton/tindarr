@@ -26,7 +26,7 @@ const LoginPage: React.FC = () => {
       const response = await axios.post<{ id: number; code: string }>(`${backendUrl}/api/auth/plex/pin`);
       const { id, code } = response.data;
 
-      const plexAuthUrl = `https://app.plex.tv/auth#?clientID=moviematch-v2&code=${code}&context[device][product]=MovieMatch&context[device][platform]=Web&context[device][device]=Web&context[device][version]=1.0&forwardUrl=${window.location.origin}/auth/callback?pinId=${id}`;
+      const plexAuthUrl = `https://app.plex.tv/auth#?clientID=tindarr&code=${code}&context[device][product]=Tindarr&context[device][platform]=Web&context[device][device]=Web&context[device][version]=1.0&forwardUrl=${window.location.origin}/auth/callback?pinId=${id}`;
       window.open(plexAuthUrl, '_blank');
 
       const pollForToken = async () => {
@@ -61,7 +61,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <div>
-      <h1>Login to MovieMatch</h1>
+      <h1>Login to Tindarr</h1>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <button onClick={handlePlexLogin}>Login with Plex</button>
 

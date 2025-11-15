@@ -17,7 +17,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/plex', plexRouter);
 
 app.get('/', (req, res) => {
-  res.send('Hello from the MovieMatch server!');
+  res.send('Hello from the Tindarr server!');
 });
 
 server.listen(port, () => {

@@ -5,7 +5,7 @@ This branch is nearly feature complete, so our remaining work focuses on validat
 ## Objectives
 - Exhaustively review testing, security, documentation, bug backlogs, engineering practices, and potential information leaks/hardcoded values.
 - Track and remediate each finding with clear owners and acceptance criteria.
-- Transition authorship to **Heston Hamilton** and begin renaming the product away from "MovieMatch".
+- Transition authorship to **Heston Hamilton** and complete the rebrand to **Tindarr** (UI/docs largely updated; repo rename + comms still pending).
 
 ## 1. Baseline Research & Tooling
 - ✅ Captured the canonical dev/build/test commands in `README.md` plus the new docs under `docs/`.

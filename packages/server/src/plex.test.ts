@@ -29,8 +29,8 @@ describe('Plex API', () => {
         null,
         {
           headers: {
-            'X-Plex-Product': 'MovieMatch',
-            'X-Plex-Client-Identifier': 'moviematch-v2',
+            'X-Plex-Product': 'Tindarr',
+            'X-Plex-Client-Identifier': 'tindarr',
             'Accept': 'application/json',
           },
         }
@@ -56,7 +56,7 @@ describe('Plex API', () => {
         'https://plex.tv/api/v2/pins/123',
         {
           headers: {
-            'X-Plex-Client-Identifier': 'moviematch-v2',
+          'X-Plex-Client-Identifier': 'tindarr',
             'Accept': 'application/json',
           },
         }
