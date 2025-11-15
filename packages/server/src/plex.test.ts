@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { getNewPin, getAuthToken, getLibraries, getMovies, getMoviesCount } from './plex';
-import { Movie } from './plex';
+import { Movie } from './types';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;

@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
 
+import { Movie } from './types';
+
 const PLEX_API_BASE_URL = 'https://plex.tv/api/v2';
 
 export interface Pin {
@@ -12,14 +14,6 @@ export interface Library {
   key: string;
   title: string;
   type: 'movie' | 'show';
-}
-
-export interface Movie {
-  key: string;
-  title: string;
-  year: number;
-  summary: string;
-  posterUrl: string;
 }
 
 interface PlexLibraryResponse {
@@ -37,12 +31,23 @@ interface PlexMovieResponse {
     Metadata: {
       ratingKey: string;
       title: string;
-      year: number;
-      summary: string;
-      thumb: string;
+      year?: number; // Made optional
+      summary?: string; // Made optional
+      thumb?: string; // Made optional
       contentRating?: string;
-      rating?: number; // Added for critic score
-      originallyAvailableAt?: string; // Added for release date
+      rating?: number;
+      originallyAvailableAt?: string;
+      tagline?: string; // New
+      studio?: string; // New
+      duration?: number; // New
+      Genre?: { tag: string }[]; // New
+      Country?: { tag: string }[]; // New
+      Director?: { tag: string }[]; // New
+      Writer?: { tag: string }[]; // New
+      Role?: { tag: string }[]; // New
+      audienceRating?: number; // New
+      audienceRatingImage?: string; // New
+      ratingImage?: string; // New
     }[];
   };
 }
@@ -209,7 +214,9 @@ export async function getMovies(
   yearMin?: number,
   yearMax?: number,
   contentRating?: string,
-  sortOrder: string = 'title:asc' // New parameter with default
+  durationMin?: number, // New parameter
+  durationMax?: number, // New parameter
+  sortOrder: string = 'title:asc'
 ): Promise<Movie[]> {
   const params: Record<string, any> = {};
   params.type = getPlexTypeInteger(libraryType);
@@ -238,15 +245,33 @@ export async function getMovies(
         filteredMetadata = filteredMetadata.filter(movie => movie.year !== undefined && movie.year <= yearMax);
       }
 
+      // Apply server-side duration filtering (new)
+      if (durationMin !== undefined) {
+        filteredMetadata = filteredMetadata.filter(movie => movie.duration !== undefined && movie.duration >= durationMin);
+      }
+      if (durationMax !== undefined) {
+        filteredMetadata = filteredMetadata.filter(movie => movie.duration !== undefined && movie.duration <= durationMax);
+      }
+
       let movies = filteredMetadata.map((movie) => ({
         key: movie.ratingKey,
         title: movie.title,
         year: movie.year,
         summary: movie.summary,
         posterUrl: movie.thumb,
-        // Add other properties if needed for sorting, e.g., rating, originallyAvailableAt
-        rating: movie.rating, // Assuming rating exists in PlexMovieResponse.Metadata
-        originallyAvailableAt: movie.originallyAvailableAt, // Assuming this exists
+        rating: movie.rating,
+        originallyAvailableAt: movie.originallyAvailableAt,
+        tagline: movie.tagline, // New
+        studio: movie.studio, // New
+        duration: movie.duration, // New
+        genres: movie.Genre?.map(g => g.tag), // New, map to string[]
+        countries: movie.Country?.map(c => c.tag), // New, map to string[]
+        directors: movie.Director?.map(d => d.tag), // New, map to string[]
+        writers: movie.Writer?.map(w => w.tag), // New, map to string[]
+        roles: movie.Role?.map(r => r.tag), // New, map to string[]
+        audienceRating: movie.audienceRating, // New
+        audienceRatingImage: movie.audienceRatingImage, // New
+        ratingImage: movie.ratingImage, // New
       }));
 
       // Apply sorting
@@ -391,7 +416,9 @@ export async function getMoviesCount(
   genre?: string,
   yearMin?: number,
   yearMax?: number,
-  contentRating?: string
+  contentRating?: string,
+  durationMin?: number, // New parameter
+  durationMax?: number // New parameter
 ): Promise<number> {
   const params: Record<string, any> = {};
   params.type = getPlexTypeInteger(libraryType); // Add type parameter
@@ -419,6 +446,14 @@ export async function getMoviesCount(
       }
       if (yearMax !== undefined) {
         filteredMovies = filteredMovies.filter(movie => movie.year !== undefined && movie.year <= yearMax);
+      }
+
+      // Apply server-side duration filtering (new)
+      if (durationMin !== undefined) {
+        filteredMovies = filteredMovies.filter(movie => movie.duration !== undefined && movie.duration >= durationMin);
+      }
+      if (durationMax !== undefined) {
+        filteredMovies = filteredMovies.filter(movie => movie.duration !== undefined && movie.duration <= durationMax);
       }
 
       return filteredMovies.length;

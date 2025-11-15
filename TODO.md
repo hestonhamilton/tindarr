@@ -4,11 +4,11 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
 
 ## Core Tasks
 
-- [ ] **Implement Duration Filtering (Min/Max)**
-    - [ ] **Server-side (`packages/server/src/plex.ts`):**
-        - [ ] Modify `getMovies` to accept `durationMin` and `durationMax` parameters.
-        - [ ] Implement server-side filtering for `duration` based on `durationMin` and `durationMax`.
-        - [ ] Modify `getMoviesCount` to accept `durationMin` and `durationMax` parameters and apply filtering.
+- [X] **Implement Duration Filtering (Min/Max)**
+    - [X] **Server-side (`packages/server/src/plex.ts`):**
+        - [X] Modify `getMovies` to accept `durationMin` and `durationMax` parameters.
+        - [X] Implement server-side filtering for `duration` based on `durationMin` and `durationMax`.
+        - [X] Modify `getMoviesCount` to accept `durationMin` and `durationMax` parameters and apply filtering.
     - [ ] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
         - [ ] Add state variables for `durationMin` and `durationMax`.
         - [ ] Add input fields for `durationMin` and `durationMax` to the "Create Room" UI.
@@ -40,22 +40,22 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
 
 ## Pre-requisite/Cleanup Tasks
 
-- [ ] **Update `PlexMovieResponse.Metadata` interface (`packages/server/src/plex.ts`):**
-    - [ ] Add `tagline?: string;`
-    - [ ] Add `studio?: string;`
-    - [ ] Add `duration?: number;`
-    - [ ] Add `Genre?: { tag: string }[];`
-    - [ ] Add `Country?: { tag: string }[];`
-    - [ ] Add `Director?: { tag: string }[];`
-    - [ ] Add `Writer?: { tag: string }[];`
-    - [ ] Add `Role?: { tag: string }[];`
-    - [ ] Add `audienceRating?: number;`
-    - [ ] Add `audienceRatingImage?: string;` (for Rotten Tomatoes icon)
-    - [ ] Add `ratingImage?: string;` (for IMDb icon)
-- [ ] **Update `Movie` interface (`packages/server/src/types.ts` and `packages/client/src/types.ts`):**
-    - [ ] Ensure all new fields from `PlexMovieResponse.Metadata` are reflected in the `Movie` interface, converting tag arrays to `string[]` where appropriate. (Already done for `types.ts`).
-- [ ] **Modify `getMovies` mapping (`packages/server/src/plex.ts`):**
-    - [ ] Map all new fields from `PlexMovieResponse.Metadata` to the `Movie` object.
+- [X] **Update `PlexMovieResponse.Metadata` interface (`packages/server/src/plex.ts`):**
+    - [X] Add `tagline?: string;`
+    - [X] Add `studio?: string;`
+    - [X] Add `duration?: number;`
+    - [X] Add `Genre?: { tag: string }[];`
+    - [X] Add `Country?: { tag: string }[];`
+    - [X] Add `Director?: { tag: string }[];`
+    - [X] Add `Writer?: { tag: string }[];`
+    - [X] Add `Role?: { tag: string }[];`
+    - [X] Add `audienceRating?: number;`
+    - [X] Add `audienceRatingImage?: string;` (for Rotten Tomatoes icon)
+    - [X] Add `ratingImage?: string;` (for IMDb icon)
+- [X] **Update `Movie` interface (`packages/server/src/types.ts` and `packages/client/src/types.ts`):**
+    - [X] Ensure all new fields from `PlexMovieResponse.Metadata` are reflected in the `Movie` interface, converting tag arrays to `string[]` where appropriate.
+- [X] **Modify `getMovies` mapping (`packages/server/src/plex.ts`):**
+    - [X] Map all new fields from `PlexMovieResponse.Metadata` to the `Movie` object.
 
 ## Icons for Ratings
 
