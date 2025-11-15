@@ -16,6 +16,7 @@ export interface Room {
   durationMax?: number;
   selectedContentRatings: string[];
   sortOrder: string;
+  likedMovies: Movie[]; // Added
 }
 
 export interface CreateRoomPayload {

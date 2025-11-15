@@ -54,24 +54,29 @@ const RoomPage: React.FC = () => {
       socket.on('movieDisliked', ({ userId: dislikerId, movieId }) => {
         console.log(`User ${dislikerId} disliked movie ${movieId}`);
       });
+
+      socket.on('roomUpdated', (room: Room) => { // New event listener
+        setRoomState(room);
+      });
     }
 
     return () => {
       if (socket) {
         socket.emit('leaveRoom', { roomId: roomCode || '', userId });
-        socket.off('roomCreated'); // Clean up
+        socket.off('roomCreated');
         socket.off('userJoined');
         socket.off('userLeft');
         socket.off('movieLiked');
         socket.off('movieDisliked');
+        socket.off('roomUpdated'); // Clean up new event listener
       }
     };
   }, [socket, roomCode, userId, userName]);
 
   const handleLike = () => {
     if (socket && movies && currentMovieIndex < movies.length) {
-      const movieId = movies[currentMovieIndex].key;
-      socket.emit('likeMovie', { roomId: roomCode || '', userId, movieId }); // Changed roomId to roomCode
+      const movie = movies[currentMovieIndex]; // Get the full movie object
+      socket.emit('likeMovie', { roomId: roomCode || '', userId, movie }); // Pass the movie object
       setCurrentMovieIndex((prevIndex) => prevIndex + 1);
     }
   };
@@ -128,7 +133,25 @@ const RoomPage: React.FC = () => {
           <button onClick={handleDislike} style={{ marginRight: '10px', padding: '10px 20px', backgroundColor: 'red', color: 'white', border: 'none', borderRadius: '5px' }}>Dislike</button>
           <button onClick={handleLike} style={{ padding: '10px 20px', backgroundColor: 'green', color: 'white', border: 'none', borderRadius: '5px' }}>Like</button>
         </div>
-      </div>
+      </div> {/* End of main movie display div */}
+
+      {roomState?.likedMovies && roomState.likedMovies.length > 0 && (
+        <div style={{ margin: '20px', border: '1px solid lightgray', padding: '10px' }}>
+          <h3>Liked Movies</h3>
+          <div style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px' }}>
+            {roomState.likedMovies.map((movie) => (
+              <div key={movie.key} style={{ flexShrink: 0, textAlign: 'center', width: '100px' }}>
+                <img
+                  src={`${plexUrl}${movie.posterUrl}?X-Plex-Token=${plexToken}`}
+                  alt={movie.title}
+                  style={{ width: '100px', height: '150px', objectFit: 'cover' }}
+                />
+                <p style={{ fontSize: '0.8em', margin: '5px 0 0 0' }}>{movie.title}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

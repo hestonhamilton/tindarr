@@ -22,6 +22,7 @@ export interface Room {
   durationMax?: number;
   selectedContentRatings: string[];
   sortOrder: string;
+  likedMovies: Movie[]; // Added
 }
 
 export interface Movie {
@@ -60,7 +61,7 @@ export interface ClientToServerEvents {
   }) => void;
   joinRoom: (payload: { roomCode: string; user: User }) => void;
   leaveRoom: (payload: { roomId: string; userId: string }) => void;
-  likeMovie: (payload: { roomId: string; userId: string; movieId: string }) => void;
+  likeMovie: (payload: { roomId: string; userId: string; movie: Movie }) => void;
   dislikeMovie: (payload: { roomId: string; userId: string; movieId: string }) => void;
 }
 
@@ -71,6 +72,7 @@ export interface ServerToClientEvents {
   userLeft: (userId: string) => void;
   movieLiked: (payload: { userId: string; movieId: string }) => void;
   movieDisliked: (payload: { userId: string; movieId: string }) => void;
+  roomUpdated: (room: Room) => void; // Added
 }
 
 export interface SelectedLibrary {

@@ -65,6 +65,22 @@ export class RoomManager {
     return undefined;
   }
 
+  addLikedMovie(roomId: string, movie: Movie): Room | undefined {
+    const room = this.rooms.get(roomId);
+    if (room) {
+      // Ensure likedMovies array exists and add the movie
+      if (!room.likedMovies) {
+        room.likedMovies = [];
+      }
+      // Add movie only if not already present (to avoid duplicates)
+      if (!room.likedMovies.some(m => m.key === movie.key)) {
+        room.likedMovies.push(movie);
+      }
+      return room;
+    }
+    return undefined;
+  }
+
   private generateRoomCode(): string {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';

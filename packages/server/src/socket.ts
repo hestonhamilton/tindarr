@@ -48,6 +48,13 @@ export function createSocketServer(server: http.Server) {
     socket.on('disconnect', () => {
       console.log('user disconnected');
     });
+
+    socket.on('likeMovie', (payload) => {
+      const updatedRoom = roomManager.addLikedMovie(payload.roomId, payload.movie);
+      if (updatedRoom) {
+        io.to(updatedRoom.id).emit('roomUpdated', updatedRoom);
+      }
+    });
   });
 
   return io;

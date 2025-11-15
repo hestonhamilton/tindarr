@@ -133,3 +133,20 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
 - [X] **Client-side (`packages/client/src/pages/Room.tsx`):**
     - [X] Remove debug logging.
     - [X] Remove temporary debug UI element.
+
+## Feature: Display Shared Liked Movies
+
+- [X] **Server-side (`packages/server/src/types.ts`):**
+    - [X] Update `Room` interface to include `likedMovies: Movie[]`.
+- [X] **Server-side (`packages/server/src/socket.ts`):**
+    - [X] Modify `likeMovie` event handler to:
+        - [X] Add the liked `Movie` object to the `room.likedMovies` array.
+        - [X] Emit an event (e.g., `roomUpdated` or `likedMoviesUpdated`) to all users in the room with the updated `room.likedMovies` list.
+- [X] **Client-side (`packages/client/src/types.ts`):**
+    - [X] Update `Room` interface to include `likedMovies: Movie[]`.
+    - [X] Update `ServerToClientEvents` to listen for the new event (e.g., `roomUpdated` or `likedMoviesUpdated`).
+- [X] **Client-side (`packages/client/src/pages/Room.tsx`):**
+    - [X] Listen for the new event (e.g., `roomUpdated` or `likedMoviesUpdated`) and update the `roomState` with the new `likedMovies` list.
+    - [X] Render a horizontally expanding list below the like/dislike buttons.
+    - [X] For each liked movie, display its title and poster.
+    - [X] Implement basic styling for the horizontal list (e.g., using flexbox with `overflow-x: auto`).
