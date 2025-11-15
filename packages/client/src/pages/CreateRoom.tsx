@@ -5,7 +5,8 @@ import { useMovieCount } from '../hooks/useMovieCount';
 import { usePlexGenres } from '../hooks/usePlexGenres';
 import { usePlexYearRange } from '../hooks/usePlexYearRange';
 import { usePlexContentRatings } from '../hooks/usePlexContentRatings';
-import { Library, SelectedLibrary } from '../types';
+import { Library, SelectedLibrary, Room } from '../types'; // Import Room
+import { useSocket } from '../hooks/useSocket'; // Import useSocket
 
 // Define sorting options
 const SORT_OPTIONS = [
@@ -24,6 +25,7 @@ const SORT_OPTIONS = [
 const CreateRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const { data: libraries, isLoading: isLoadingLibraries, isError: isErrorLibraries, error: errorLibraries } = usePlexLibraries();
+  const [userName, setUserName] = useState<string>(''); // New state for user name
   const [selectedLibraries, setSelectedLibraries] = useState<SelectedLibrary[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [yearMin, setYearMin] = useState<string>('');
@@ -34,6 +36,21 @@ const CreateRoomPage: React.FC = () => {
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [showAllContentRatings, setShowAllContentRatings] = useState(false);
   const [sortOrder, setSortOrder] = useState<string>(SORT_OPTIONS[0].value); // New state for sort order
+  const socket = useSocket(); // Establish socket connection
+
+  // Effect to listen for roomCreated event
+  useEffect(() => {
+    if (socket) {
+      socket.on('roomCreated', (room) => {
+        navigate(`/room/${room.code}`);
+      });
+    }
+    return () => {
+      if (socket) {
+        socket.off('roomCreated');
+      }
+    };
+  }, [socket, navigate]);
 
   // Fetch genres based on selected libraries
   const { data: genres, isLoading: isLoadingGenres, isError: isErrorGenres, error: errorGenres } = usePlexGenres({
@@ -155,8 +172,15 @@ const CreateRoomPage: React.FC = () => {
     localStorage.setItem('durationMax', durationMax || ''); // Save durationMax
     localStorage.setItem('sortOrder', sortOrder); // Save sort order
 
-    const placeholderRoomId = 'test-room-123';
-    navigate(`/room/${placeholderRoomId}`);
+    const userId = crypto.randomUUID(); // Generate UUID for userId
+    localStorage.setItem('userId', userId); // Store userId
+    localStorage.setItem('userName', userName); // Store userName
+
+    if (socket && userName) { // Ensure userName is provided
+      socket.emit('createRoom', { user: { id: userId, name: userName } });
+    } else {
+      alert('Please enter your name to create a room.');
+    }
   };
 
   const genreContainerMaxHeight = showAllGenres ? 'none' : '150px';
@@ -173,6 +197,16 @@ const CreateRoomPage: React.FC = () => {
   return (
     <div>
       <h1>Create New Room</h1>
+      <div>
+        <label htmlFor="userName">Your Name:</label>
+        <input
+          type="text"
+          id="userName"
+          value={userName}
+          onChange={(e) => setUserName(e.target.value)}
+          placeholder="Enter your name"
+        />
+      </div>
       <h2>Select Libraries</h2>
       {libraries?.map((library: Library) => (
         <div key={library.key}>

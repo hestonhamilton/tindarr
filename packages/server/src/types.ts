@@ -5,6 +5,7 @@ export interface User {
 
 export interface Room {
   id: string;
+  code: string; // New
   users: User[];
 }
 
@@ -13,7 +14,7 @@ export interface CreateRoomPayload {
 }
 
 export interface JoinRoomPayload {
-  roomId: string;
+  roomCode: string; // Changed from roomId
   user: User;
 }
 

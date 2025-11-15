@@ -28,7 +28,7 @@ export function createSocketServer(server: http.Server) {
     });
 
     socket.on('joinRoom', (payload: JoinRoomPayload) => {
-      const room = roomManager.joinRoom(payload.roomId, payload.user);
+      const room = roomManager.joinRoom(payload.roomCode, payload.user);
       if (room) {
         socket.join(room.id);
         io.to(room.id).emit('userJoined', room);

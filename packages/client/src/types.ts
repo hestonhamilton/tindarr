@@ -4,6 +4,17 @@ export interface Library {
   type: 'movie' | 'show';
 }
 
+export interface User {
+  id: string;
+  name: string;
+}
+
+export interface Room {
+  id: string;
+  code: string;
+  users: User[];
+}
+
 export interface Movie {
   key: string;
   title: string;
@@ -27,17 +38,17 @@ export interface Movie {
 }
 
 export interface ClientToServerEvents {
-  createRoom: (payload: { userId: string; username: string; selectedLibraries: string[]; genre?: string; yearMin?: number; yearMax?: number }) => void;
-  joinRoom: (payload: { roomId: string; userId: string; username: string }) => void;
+  createRoom: (payload: { user: User }) => void; // Changed
+  joinRoom: (payload: { roomCode: string; user: User }) => void; // Changed
   leaveRoom: (payload: { roomId: string; userId: string }) => void;
   likeMovie: (payload: { roomId: string; userId: string; movieId: string }) => void;
   dislikeMovie: (payload: { roomId: string; userId: string; movieId: string }) => void;
 }
 
 export interface ServerToClientEvents {
-  roomCreated: (roomId: string) => void;
-  roomJoined: (room: { id: string; users: { id: string; username: string }[] }) => void;
-  userJoined: (user: { id: string; username: string }) => void;
+  roomCreated: (room: Room) => void; // Changed
+  roomJoined: (room: Room) => void; // Changed
+  userJoined: (room: Room) => void; // Changed
   userLeft: (userId: string) => void;
   movieLiked: (payload: { userId: string; movieId: string }) => void;
   movieDisliked: (payload: { userId: string; movieId: string }) => void;

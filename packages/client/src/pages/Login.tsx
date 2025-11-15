@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react'; // Import useEffect
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import crypto from 'crypto'; // Import crypto for UUID generation
 
 const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>(''); // New state for user name
+  const [roomCodeInput, setRoomCodeInput] = useState<string>(''); // New state for room code input
   const navigate = useNavigate();
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'; // Fallback for local development
 
@@ -45,11 +48,48 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const handleJoinRoom = () => {
+    if (!userName || !roomCodeInput) {
+      alert('Please enter your name and the room code.');
+      return;
+    }
+    const userId = crypto.randomUUID(); // Generate UUID for userId
+    localStorage.setItem('userId', userId); // Store userId
+    localStorage.setItem('userName', userName); // Store userName
+    navigate(`/room/${roomCodeInput}`);
+  };
+
   return (
     <div>
       <h1>Login to MovieMatch</h1>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <button onClick={handlePlexLogin}>Login with Plex</button>
+
+      <hr style={{ margin: '20px 0' }} />
+
+      <h2>Join an Existing Room</h2>
+      <div>
+        <label htmlFor="joinUserName">Your Name:</label>
+        <input
+          type="text"
+          id="joinUserName"
+          value={userName}
+          onChange={(e) => setUserName(e.target.value)}
+          placeholder="Enter your name"
+        />
+      </div>
+      <div>
+        <label htmlFor="roomCodeInput">Room Code:</label>
+        <input
+          type="text"
+          id="roomCodeInput"
+          value={roomCodeInput}
+          onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())} // Convert to uppercase
+          placeholder="Enter room code"
+          maxLength={6} // Assuming 6-character codes
+        />
+      </div>
+      <button onClick={handleJoinRoom} disabled={!userName || !roomCodeInput}>Join Room</button>
     </div>
   );
 };

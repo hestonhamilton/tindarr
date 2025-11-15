@@ -1,20 +1,25 @@
 import { Room, User } from './types';
+import crypto from 'crypto'; // Import crypto module
 
 export class RoomManager {
-  private rooms: Map<string, Room> = new Map();
+  private rooms: Map<string, Room> = new Map(); // Map by roomId (UUID)
+  private roomCodes: Map<string, string> = new Map(); // Map roomCode to roomId
 
   createRoom(user: User): Room {
-    const roomId = this.generateRoomId();
+    const roomId = crypto.randomUUID(); // Use UUID for internal ID
+    const roomCode = this.generateRoomCode(); // Generate user-friendly code
     const room: Room = {
       id: roomId,
+      code: roomCode, // Add code to room
       users: [user],
     };
     this.rooms.set(roomId, room);
+    this.roomCodes.set(roomCode, roomId); // Store mapping
     return room;
   }
 
-  joinRoom(roomId: string, user: User): Room | null {
-    const room = this.rooms.get(roomId);
+  joinRoom(roomCode: string, user: User): Room | null { // Accepts roomCode
+    const room = this.getRoomByCode(roomCode); // Find by code
     if (room) {
       room.users.push(user);
       return room;
@@ -30,6 +35,8 @@ export class RoomManager {
         room.users.splice(userIndex, 1);
         if (room.users.length === 0) {
           this.rooms.delete(roomId);
+          // Remove code mapping when room is deleted
+          this.roomCodes.delete(room.code);
         }
         return room;
       }
@@ -37,11 +44,29 @@ export class RoomManager {
     return null;
   }
 
-  getRoom(roomId: string): Room | undefined {
+  getRoomById(roomId: string): Room | undefined {
     return this.rooms.get(roomId);
   }
 
-  private generateRoomId(): string {
-    return Math.random().toString(36).substr(2, 9);
+  getRoomByCode(code: string): Room | undefined {
+    const roomId = this.roomCodes.get(code);
+    if (roomId) {
+      return this.rooms.get(roomId);
+    }
+    return undefined;
+  }
+
+  private generateRoomCode(): string {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    const codeLength = 6; // e.g., 6 characters
+    for (let i = 0; i < codeLength; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    // Ensure uniqueness
+    if (this.roomCodes.has(result)) {
+      return this.generateRoomCode(); // Regenerate if not unique
+    }
+    return result;
   }
 }

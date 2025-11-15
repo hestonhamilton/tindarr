@@ -30,12 +30,12 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
         - [X] Update `SORT_OPTIONS` to include new duration, critic rating, and audience rating sorting choices.
         - [X] Ensure `sortOrder` is correctly passed to `useMovieCount` and `usePlexMovies`.
 
-- [ ] **Display Enhanced Movie Details on Voting Screen (`packages/client/src/pages/Room.tsx`)**
-    - [ ] **Update `Movie` interface (if not already done):** Ensure `tagline`, `duration`, `rating`, `audienceRating`, `studio`, `genres`, `countries`, `directors`, `writers`, `roles` are available. (Already done in previous step for `types.ts`).
-    - [ ] Display `tagline`.
-    - [ ] Display `duration` (formatted, e.g., "1h 40m").
-    - [ ] Display `rating` (critic score) with an IMDb icon.
-    - [ ] Display `audienceRating` (audience score) with a Rotten Tomatoes icon.
+- [X] **Display Enhanced Movie Details on Voting Screen (`packages/client/src/pages/Room.tsx`)**
+    - [X] **Update `Movie` interface (if not already done):** Ensure `tagline`, `duration`, `rating`, `audienceRating`, `studio`, `genres`, `countries`, `directors`, `writers`, `roles` are available. (Already done in previous step for `types.ts`).
+    - [X] Display `tagline`.
+    - [X] Display `duration` (formatted, e.g., "1h 40m").
+    - [X] Display `rating` (critic score) with an IMDb icon. (Icons are placeholders)
+    - [X] Display `audienceRating` (audience score) with a Rotten Tomatoes icon. (Icons are placeholders)
     - [ ] Consider displaying `studio`, `genres`, `countries`, `directors`, `writers`, `roles` if space permits and it enhances the UX.
 
 ## Pre-requisite/Cleanup Tasks
@@ -62,3 +62,32 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
 - [ ] **Client-side (`packages/client/public` or `src/assets`):**
     - [ ] Source appropriate IMDb and Rotten Tomatoes icons (SVG or PNG).
     - [ ] Integrate icons into `Room.tsx` for displaying ratings.
+
+## Room Code Generation and Joining
+
+- [X] **Server-side (`packages/server/src/room.ts`):**
+    - [X] Modify `createRoom` to generate a unique, short, and memorable code.
+    - [X] Store this code along with the `roomId` (UUID).
+    - [X] Add a function `getRoomByCode` to find a room by its code.
+    - [X] Modify `joinRoom` to accept a room code.
+    - [X] Modify `leaveRoom` to remove the room code mapping if the room is deleted.
+    - [X] Rename `getRoom` to `getRoomById`.
+- [X] **Server-side (`packages/server/src/socket.ts`):**
+    - [X] When `createRoom` is called, the `roomCreated` event should emit the generated room code (and `roomId`).
+    - [X] When `joinRoom` is called, it should use the room code to find the room.
+- [X] **Server-side (`packages/server/src/types.ts`):**
+    - [X] Update `Room` interface to include `code: string`.
+    - [X] Update `CreateRoomPayload` and `JoinRoomPayload` if necessary.
+- [X] **Client-side (`packages/client/src/types.ts`):**
+    - [X] Update `User` interface (if needed).
+    - [X] Update `ClientToServerEvents` for `createRoom` and `joinRoom`.
+    - [X] Update `ServerToClientEvents` for `roomCreated`, `roomJoined`, and `userJoined`.
+- [X] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
+    - [X] After `roomCreated` event, navigate to `/room/${roomCode}` (using the generated code).
+- [X] **Client-side (`packages/client/src/pages/Login.tsx` or a new component):**
+    - [X] Add an input field for "Join Room with Code".
+    - [X] Handle submission of the room code.
+    - [X] Navigate to `/room/${enteredRoomCode}`.
+- [X] **Client-side (`packages/client/src/pages/Room.tsx`):**
+    - [X] The `roomId` in `useParams` will now be the `roomCode`.
+    - [X] Modify `socket.emit('joinRoom', ...)` to pass the `roomCode`.

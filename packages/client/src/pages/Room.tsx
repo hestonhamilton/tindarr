@@ -6,7 +6,7 @@ import { Movie, ClientToServerEvents, ServerToClientEvents, SelectedLibrary } fr
 import { Socket } from 'socket.io-client';
 
 const RoomPage: React.FC = () => {
-  const { roomId } = useParams<{ roomId: string }>();
+  const { roomCode } = useParams<{ roomCode: string }>(); // Changed to roomCode
   const [currentMovieIndex, setCurrentMovieIndex] = useState(0);
   const socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = useSocket();
 
@@ -37,8 +37,8 @@ const RoomPage: React.FC = () => {
   const storedSortOrder = localStorage.getItem('sortOrder');
   const sortOrder: string | undefined = storedSortOrder || undefined;
 
-  const userId = 'user123'; // Replace with actual user ID
-  const username = 'TestUser'; // Replace with actual username
+  const userId = localStorage.getItem('userId') || ''; // Retrieve userId
+  const userName = localStorage.getItem('userName') || ''; // Retrieve userName
 
   const { data: movies, isLoading, isError, error } = usePlexMovies({
     plexUrl,
@@ -54,11 +54,11 @@ const RoomPage: React.FC = () => {
   });
 
   useEffect(() => {
-    if (socket && roomId) {
-      socket.emit('joinRoom', { roomId, userId, username });
+    if (socket && roomCode) {
+      socket.emit('joinRoom', { roomCode: roomCode || '', user: { id: userId, name: userName } });
 
-      socket.on('userJoined', (user) => {
-        console.log(`${user.username} joined the room.`);
+      socket.on('userJoined', (room) => {
+        console.log(`${room.users[room.users.length - 1].name} joined the room.`);
       });
 
       socket.on('userLeft', (leftUserId) => {
@@ -78,19 +78,19 @@ const RoomPage: React.FC = () => {
 
     return () => {
       if (socket) {
-        socket.emit('leaveRoom', { roomId: roomId || '', userId });
+        socket.emit('leaveRoom', { roomId: roomCode || '', userId }); // Use roomCode for leaveRoom
         socket.off('userJoined');
         socket.off('userLeft');
         socket.off('movieLiked');
         socket.off('movieDisliked');
       }
     };
-  }, [socket, roomId, userId, username]);
+  }, [socket, roomCode, userId, userName]);
 
   const handleLike = () => {
     if (socket && movies && currentMovieIndex < movies.length) {
       const movieId = movies[currentMovieIndex].key;
-      socket.emit('likeMovie', { roomId: roomId || '', userId, movieId });
+      socket.emit('likeMovie', { roomId: roomCode || '', userId, movieId }); // Changed roomId to roomCode
       console.log(`Liked movie: ${movies[currentMovieIndex].title}`);
       setCurrentMovieIndex((prevIndex) => prevIndex + 1);
     }
@@ -99,7 +99,7 @@ const RoomPage: React.FC = () => {
   const handleDislike = () => {
     if (socket && movies && currentMovieIndex < movies.length) {
       const movieId = movies[currentMovieIndex].key;
-      socket.emit('dislikeMovie', { roomId: roomId || '', userId, movieId });
+      socket.emit('dislikeMovie', { roomId: roomCode || '', userId, movieId }); // Changed roomId to roomCode
       console.log(`Disliked movie: ${movies[currentMovieIndex].title}`);
       setCurrentMovieIndex((prevIndex) => prevIndex + 1);
     }
@@ -136,7 +136,7 @@ const RoomPage: React.FC = () => {
 
   return (
     <div>
-      <h1>Movie Room: {roomId}</h1>
+      <h1>Movie Room: {roomCode}</h1>
       <div style={{ border: '1px solid black', padding: '20px', margin: '20px', textAlign: 'center' }}>
         <h2>{currentMovie.title} ({currentMovie.year})</h2>
         {currentMovie.tagline && <p><i>"{currentMovie.tagline}"</i></p>}
