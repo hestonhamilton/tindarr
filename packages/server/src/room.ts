@@ -1,4 +1,4 @@
-import { Room, User, CreateRoomPayload } from './types'; // Import CreateRoomPayload
+import { Room, User, CreateRoomPayload, Movie } from './types'; // Import Movie
 import crypto from 'crypto'; // Import crypto module
 
 export class RoomManager {
@@ -21,6 +21,8 @@ export class RoomManager {
       durationMax: payload.durationMax,
       selectedContentRatings: payload.selectedContentRatings,
       sortOrder: payload.sortOrder,
+      likedMovies: [],
+      movieLikes: {}, // Initialize movieLikes
     };
     this.rooms.set(roomId, room);
     this.roomCodes.set(roomCode, roomId); // Store mapping
@@ -30,7 +32,10 @@ export class RoomManager {
   joinRoom(roomCode: string, user: User): Room | null { // Accepts roomCode
     const room = this.getRoomByCode(roomCode); // Find by code
     if (room) {
-      room.users.push(user);
+      // Only add user if they are not already in the room
+      if (!room.users.some(existingUser => existingUser.id === user.id)) {
+        room.users.push(user);
+      }
       return room;
     }
     return null;
@@ -65,16 +70,29 @@ export class RoomManager {
     return undefined;
   }
 
-  addLikedMovie(roomId: string, movie: Movie): Room | undefined {
+  addLikedMovie(roomId: string, movie: Movie, userId: string): Room | undefined { // Added userId
     const room = this.rooms.get(roomId);
     if (room) {
-      // Ensure likedMovies array exists and add the movie
-      if (!room.likedMovies) {
-        room.likedMovies = [];
+      // Initialize movieLikes for this movie if it doesn't exist
+      if (!room.movieLikes[movie.key]) {
+        room.movieLikes[movie.key] = [];
       }
-      // Add movie only if not already present (to avoid duplicates)
-      if (!room.likedMovies.some(m => m.key === movie.key)) {
-        room.likedMovies.push(movie);
+
+      // Add user to the list of users who liked this movie, if not already present
+      if (!room.movieLikes[movie.key].includes(userId)) {
+        room.movieLikes[movie.key].push(userId);
+      }
+
+      // Check if all current users in the room have liked this movie AND there's more than one user
+      const allUsersLiked = room.users.length > 1 && room.users.every(user =>
+        room.movieLikes[movie.key] && room.movieLikes[movie.key].includes(user.id)
+      );
+
+      if (allUsersLiked) {
+        // Add movie to likedMovies only if not already present
+        if (!room.likedMovies.some(m => m.key === movie.key)) {
+          room.likedMovies.push(movie);
+        }
       }
       return room;
     }

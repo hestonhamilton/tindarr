@@ -150,3 +150,21 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
     - [X] Render a horizontally expanding list below the like/dislike buttons.
     - [X] For each liked movie, display its title and poster.
     - [X] Implement basic styling for the horizontal list (e.g., using flexbox with `overflow-x: auto`).
+
+## Feature: Only Add Movies to Liked List if All Users Like Them
+
+- [X] **Server-side (`packages/server/src/types.ts`):**
+    - [X] Update `Room` interface to include a mechanism to track individual user likes for movies (e.g., `movieLikes: Map<string, Set<string>>` where key is `movieId` and value is a set of `userId`s).
+- [X] **Server-side (`packages/server/src/room.ts`):**
+    - [X] Modify `addLikedMovie` (or create a new method) to:
+        - [X] Record the `userId` as having liked the `movieId`.
+        - [X] Check if all users in the room have liked this specific `movieId`.
+        - [X] If all users have liked it, then add the `Movie` object to `room.likedMovies`.
+        - [X] Ensure duplicate entries in `room.likedMovies` are still prevented.
+- [X] **Client-side (`packages/client/src/pages/Room.tsx`):**
+    - [X] No direct changes expected for rendering, as it will still display `room.likedMovies`. The logic change is server-side.
+
+## Feature: Prevent Single-User Likes from Populating Shared List
+
+- [X] **Server-side (`packages/server/src/room.ts`):**
+    - [X] Modify `addLikedMovie` to include a guard: if `room.users.length <= 1`, then the movie should not be added to `room.likedMovies`, even if the `allUsersLiked` condition would otherwise be met.

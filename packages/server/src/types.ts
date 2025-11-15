@@ -16,7 +16,8 @@ export interface Room {
   durationMax?: number;
   selectedContentRatings: string[];
   sortOrder: string;
-  likedMovies: Movie[]; // Added
+  likedMovies: Movie[];
+  movieLikes: Record<string, string[]>; // Added: movieId -> array of userIds who liked it
 }
 
 export interface CreateRoomPayload {
@@ -47,12 +48,14 @@ export interface ServerToClientEvents {
   userJoined: (room: Room) => void;
   userLeft: (room: Room) => void;
   roomNotFound: () => void;
+  roomUpdated: (room: Room) => void; // Added
 }
 
 export interface ClientToServerEvents {
   createRoom: (payload: CreateRoomPayload) => void;
   joinRoom: (payload: JoinRoomPayload) => void;
   leaveRoom: (payload: LeaveRoomPayload) => void;
+  likeMovie: (payload: { roomId: string; userId: string; movie: Movie }) => void; // Added
 }
 
 export interface Movie {

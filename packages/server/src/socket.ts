@@ -50,9 +50,19 @@ export function createSocketServer(server: http.Server) {
     });
 
     socket.on('likeMovie', (payload) => {
-      const updatedRoom = roomManager.addLikedMovie(payload.roomId, payload.movie);
-      if (updatedRoom) {
-        io.to(updatedRoom.id).emit('roomUpdated', updatedRoom);
+      const roomCode = payload.roomId; // The payload.roomId is actually the roomCode
+      const userId = payload.userId; // Get userId from payload
+      const room = roomManager.getRoomByCode(roomCode); // Get the room by code
+
+      if (room) {
+        const updatedRoom = roomManager.addLikedMovie(room.id, payload.movie, userId); // Pass userId
+        if (updatedRoom) {
+          io.to(updatedRoom.id).emit('roomUpdated', updatedRoom);
+        } else {
+          // Optionally emit an error back to the client
+        }
+      } else {
+        // Optionally emit an error back to the client
       }
     });
   });
