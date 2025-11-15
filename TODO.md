@@ -8,44 +8,42 @@ This branch is nearly feature complete, so our remaining work focuses on validat
 - Transition authorship to **Heston Hamilton** and begin renaming the product away from "MovieMatch".
 
 ## 1. Baseline Research & Tooling
-- Catalog every service, package, feature flag, and deployment path so reviews have full context.
-- Capture the authoritative commands for building, linting, testing, and packaging across client/server.
-- Ensure we can reproduce the full stack locally (Docker + npm workspaces) and document any blockers.
-- Stand up checklists for the categories below (testing, security, docs, etc.) so findings are logged consistently.
+- ✅ Captured the canonical dev/build/test commands in `README.md` plus the new docs under `docs/`.
+- ✅ Added CI pipelines (Node test/build workflow + Gitleaks secret scan) to mirror the local experience.
+- ☐ Maintain an issue tracker / checklist for future findings (still manual).
 
 ## 2. Testing & Quality Coverage
-- Enumerate all existing automated tests (unit, integration, socket, e2e) and record the commands + scope for each.
-- Run each suite, collect pass/fail logs, and file defects for flaky or failing tests.
-- Identify untested surfaces (e.g., new filter UX, socket flows, error boundaries) and outline the additional tests we will author, referencing files and frameworks to use.
-- Confirm CI parity: ensure local commands mirror pipeline behavior and open issues if they diverge.
+- ✅ Server Jest suites expanded (Plex metadata, filtering, socket routes) and run in CI.
+- ✅ Client Vitest hook tests added (`useMovieCount`, `usePlexMovies`) with Vite 7 builds passing.
+- ✅ Node workflow runs the above on every push/PR.
+- ☐ Extend coverage to higher-level components (CreateRoom UX, Room state machine) and ensure Playwright specs are maintained.
 
 ## 3. Vulnerability & Dependency Review
-- Audit server/client dependencies (npm workspaces) for known vulnerabilities via `npm audit` or an equivalent tool, capturing CVE references and remediation paths.
-- Inspect critical modules (auth flow, Plex integration, socket events) for insecure patterns such as unsanitized input, missing validation, or outdated crypto.
-- Review Dockerfile and docker-compose configuration for privilege, secret, or networking risks.
-- Document mitigation actions (upgrades, patches, code fixes) and prioritize based on severity.
+- ✅ Ran `npm audit` (Node 22 / npm 11). Current output shows 18 moderate alerts stemming from `js-yaml` via `ts-jest`; no patched release is available yet (latest `ts-jest` is 29.4.5).
+- ✅ Upgraded client to Vite 7 / Vitest 4 and server Jest stack to the latest available versions.
+- ☐ Track `ts-jest` advisory and re-run audits once a fixed major release ships; document any interim mitigations.
 
 ## 4. Documentation & Knowledge Transfers
-- Sweep all Markdown/docs (root + `/docs` + package-level READMEs) to ensure they reflect current architecture, environment variables, and workflows.
-- Add sections covering the audit effort, how to run the new tests, and any new operational procedures stemming from fixes.
-- Capture troubleshooting guides for recurring errors uncovered while testing (e.g., Plex auth issues, Socket.IO misconfigurations).
+- ✅ README rewritten for the React/Node architecture (env setup, npm workspaces, Docker, testing).
+- ✅ Added `docs/configuration.md`, `docs/docker-compose.md`, and `docs/reverse-proxy.md`.
+- ✅ Moved `AGENTS.md` into `docs/`.
+- ☐ Add troubleshooting/FAQ sections (e.g., Plex auth failures, Socket.IO CORS).
 
 ## 5. Bug & Best-Practice Backlog
-- Review open issues or TODO comments, confirm they still apply post-feature work, and re-file anything missing from tracking.
-- Perform targeted exploratory testing to uncover regressions or UX gaps, noting repro steps and severity.
-- Check code style and TypeScript best practices (typing completeness, error handling, logging hygiene) and log instances that violate repo conventions.
+- ☐ Review open GitHub issues/TODO comments and re-triage for the modern stack.
+- ☐ Schedule exploratory testing sessions (filters, room codes, match syncing) and document findings.
+- ☐ Audit TypeScript best practices (error boundaries, logging) now that the files have settled.
 
 ## 6. Information Leakage & Hardcoded Value Audit
-- Search the repository (including configs, scripts, Docker assets) for plaintext tokens, URLs, or credentials; replace with environment variables where necessary.
-- Verify logging/redaction rules so Plex tokens or user data never appear in logs or client storage.
-- Document each sensitive area with recommended handling (e.g., `.env` templates, secrets management) and add automated checks if feasible.
+- ✅ Added `.env.example` files for client/server and tightened `.gitignore` to exclude `.env*`, `.npmrc`, coverage, etc.
+- ✅ Integrated Gitleaks in CI to scan every push/PR.
+- ☐ Spot-check server logs and browser storage for potential token leaks; document findings.
 
 ## 7. Authorship & Rebranding Tasks
-- Update metadata files (`package.json`, documentation headers, LICENSE notices if required) so the author is **Heston Hamilton**.
-- Decide on the new product name, confirm availability (domains, package names), and map every location referencing “MovieMatch” (UI copy, code constants, docs, Docker images).
-- Plan staged renaming (code identifiers, branding assets, CI/CD references) to avoid breaking deployments, and log dependencies on external systems (Plex app registration, Docker Hub repos).
-- Prepare communication/documentation updates announcing the new ownership and name once the technical work lands.
+- ✅ Updated `package.json`, LICENSE, and README credits to reference Heston Hamilton.
+- ☐ Decide on the new product name and update UI copy, Docker image names, and domain references.
+- ☐ Prepare comms/docs for the rename and any Plex app registration updates needed.
 
 ## 8. Reporting & Tracking
-- Maintain a running ledger (spreadsheet or issue board) capturing every finding, category, owner, severity, fix status, and verification evidence.
-- Provide weekly status summaries covering completed reviews, outstanding risks, and next steps to keep stakeholders aligned.
+- ☐ Stand up an issue board or spreadsheet capturing the remaining tasks above with owners.
+- ☐ Provide periodic status updates (could be GitHub Discussions or project board notes) so progress is visible to collaborators.
