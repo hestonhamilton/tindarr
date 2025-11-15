@@ -77,6 +77,22 @@ const CreateRoomPage: React.FC = () => {
     );
   };
 
+  const handleYearMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newMin = e.target.value;
+    setYearMin(newMin);
+    if (newMin && yearMax && parseInt(newMin, 10) > parseInt(yearMax, 10)) {
+      setYearMax(newMin);
+    }
+  };
+
+  const handleYearMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newMax = e.target.value;
+    setYearMax(newMax);
+    if (newMax && yearMin && parseInt(newMax, 10) < parseInt(yearMin, 10)) {
+      setYearMin(newMax);
+    }
+  };
+
   const handleCreateRoom = () => {
     localStorage.setItem('selectedLibraries', JSON.stringify(selectedLibraries));
     localStorage.setItem('selectedGenres', JSON.stringify(selectedGenres));
@@ -122,7 +138,7 @@ const CreateRoomPage: React.FC = () => {
             {isLoadingGenres && <div>Loading genres...</div>}
             {isErrorGenres && <div>Error loading genres: {errorGenres?.message}</div>}
             <div style={{ maxHeight: genreContainerMaxHeight, overflowY: 'auto', border: '1px solid #ccc', padding: '5px' }}>
-              {genres?.map((genreName: string) => ( // Explicitly type genreName
+              {genres?.map((genreName: string) => (
                 <div key={genreName} style={{ marginBottom: '5px' }}>
                   <input
                     type="checkbox"
@@ -150,7 +166,7 @@ const CreateRoomPage: React.FC = () => {
           type="number"
           id="yearMin"
           value={yearMin}
-          onChange={(e) => setYearMin(e.target.value)}
+          onChange={handleYearMinChange} // Use new handler
         />
       </div>
       <div>
@@ -159,7 +175,7 @@ const CreateRoomPage: React.FC = () => {
           type="number"
           id="yearMax"
           value={yearMax}
-          onChange={(e) => setYearMax(e.target.value)}
+          onChange={handleYearMaxChange} // Use new handler
         />
       </div>
       <div>
