@@ -24,6 +24,8 @@ const CreateRoomPage: React.FC = () => {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [yearMin, setYearMin] = useState<string>('');
   const [yearMax, setYearMax] = useState<string>('');
+  const [durationMin, setDurationMin] = useState<string>(''); // New state
+  const [durationMax, setDurationMax] = useState<string>(''); // New state
   const [selectedContentRatings, setSelectedContentRatings] = useState<string[]>([]);
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [showAllContentRatings, setShowAllContentRatings] = useState(false);
@@ -52,6 +54,8 @@ const CreateRoomPage: React.FC = () => {
     yearMin: yearMin ? parseInt(yearMin, 10) : undefined,
     yearMax: yearMax ? parseInt(yearMax, 10) : undefined,
     contentRating: selectedContentRatings.join(',') || undefined,
+    durationMin: durationMin ? parseInt(durationMin, 10) * 60 * 1000 : undefined, // Convert minutes to milliseconds
+    durationMax: durationMax ? parseInt(durationMax, 10) * 60 * 1000 : undefined, // Convert minutes to milliseconds
   });
 
   // Fetch year range for selected libraries
@@ -123,10 +127,28 @@ const CreateRoomPage: React.FC = () => {
     }
   };
 
+  const handleDurationMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newMin = e.target.value;
+    setDurationMin(newMin);
+    if (newMin && durationMax && parseInt(newMin, 10) > parseInt(durationMax, 10)) {
+      setDurationMax(newMin);
+    }
+  };
+
+  const handleDurationMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newMax = e.target.value;
+    setDurationMax(newMax);
+    if (newMax && durationMin && parseInt(newMax, 10) < parseInt(durationMin, 10)) {
+      setDurationMin(newMax);
+    }
+  };
+
   const handleCreateRoom = () => {
     localStorage.setItem('selectedLibraries', JSON.stringify(selectedLibraries));
     localStorage.setItem('selectedGenres', JSON.stringify(selectedGenres));
     localStorage.setItem('selectedContentRatings', JSON.stringify(selectedContentRatings));
+    localStorage.setItem('durationMin', durationMin || ''); // Save durationMin
+    localStorage.setItem('durationMax', durationMax || ''); // Save durationMax
     localStorage.setItem('sortOrder', sortOrder); // Save sort order
 
     const placeholderRoomId = 'test-room-123';
@@ -242,6 +264,33 @@ const CreateRoomPage: React.FC = () => {
           value={yearMax}
           onChange={handleYearMaxChange}
         />
+      </div>
+
+      {/* Duration Filter Section */}
+      <div>
+        <h3>Duration (minutes)</h3>
+        <div>
+          <label htmlFor="durationMin">Min:</label>
+          <input
+            type="number"
+            id="durationMin"
+            value={durationMin}
+            onChange={handleDurationMinChange}
+            step="1"
+            min="0"
+          />
+        </div>
+        <div>
+          <label htmlFor="durationMax">Max:</label>
+          <input
+            type="number"
+            id="durationMax"
+            value={durationMax}
+            onChange={handleDurationMaxChange}
+            step="1"
+            min="0"
+          />
+        </div>
       </div>
 
       {/* New Sorting Options Section */}

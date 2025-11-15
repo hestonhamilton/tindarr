@@ -28,6 +28,12 @@ const RoomPage: React.FC = () => {
   const storedYearMax = localStorage.getItem('yearMax');
   const yearMax: string | undefined = storedYearMax || undefined;
 
+  const storedDurationMin = localStorage.getItem('durationMin');
+  const durationMin: string | undefined = storedDurationMin || undefined;
+
+  const storedDurationMax = localStorage.getItem('durationMax');
+  const durationMax: string | undefined = storedDurationMax || undefined;
+
   const storedSortOrder = localStorage.getItem('sortOrder');
   const sortOrder: string | undefined = storedSortOrder || undefined;
 
@@ -42,6 +48,8 @@ const RoomPage: React.FC = () => {
     yearMin: yearMin ? parseInt(yearMin, 10) : undefined,
     yearMax: yearMax ? parseInt(yearMax, 10) : undefined,
     contentRating: selectedContentRatings.join(',') || undefined,
+    durationMin: durationMin ? parseInt(durationMin, 10) : undefined,
+    durationMax: durationMax ? parseInt(durationMax, 10) : undefined,
     sortOrder: sortOrder,
   });
 

@@ -9,16 +9,16 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
         - [X] Modify `getMovies` to accept `durationMin` and `durationMax` parameters.
         - [X] Implement server-side filtering for `duration` based on `durationMin` and `durationMax`.
         - [X] Modify `getMoviesCount` to accept `durationMin` and `durationMax` parameters and apply filtering.
-    - [ ] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
-        - [ ] Add state variables for `durationMin` and `durationMax`.
-        - [ ] Add input fields for `durationMin` and `durationMax` to the "Create Room" UI.
-        - [ ] Pass `durationMin` and `durationMax` to `useMovieCount` and `usePlexMovies`.
-        - [ ] Implement client-side validation for `durationMin` and `durationMax` (e.g., min <= max).
-    - [ ] **Client-side (`packages/client/src/hooks/usePlexMovies.ts`):**
-        - [ ] Update `PlexMoviesParams` interface to include `durationMin` and `durationMax`.
-        - [ ] Pass `durationMin` and `durationMax` to the server's `/api/plex/movies` endpoint.
-    - [ ] **Client-side (`packages/client/src/pages/Room.tsx`):**
-        - [ ] Retrieve `durationMin` and `durationMax` from `localStorage` and pass to `usePlexMovies`.
+    - [X] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
+        - [X] Add state variables for `durationMin` and `durationMax`.
+        - [X] Add input fields for `durationMin` and `durationMax` to the "Create Room" UI.
+        - [X] Pass `durationMin` and `durationMax` to `useMovieCount` and `usePlexMovies`.
+        - [X] Implement client-side validation for `durationMin` and `durationMax` (e.g., min <= max).
+    - [X] **Client-side (`packages/client/src/hooks/usePlexMovies.ts`):**
+        - [X] Update `PlexMoviesParams` interface to include `durationMin` and `durationMax`.
+        - [X] Pass `durationMin` and `durationMax` to the server's `/api/plex/movies` endpoint.
+    - [X] **Client-side (`packages/client/src/pages/Room.tsx`):**
+        - [X] Retrieve `durationMin` and `durationMax` from `localStorage` and pass to `usePlexMovies`.
 
 - [ ] **Implement New Sorting Options**
     - [ ] **Server-side (`packages/server/src/plex.ts`):**

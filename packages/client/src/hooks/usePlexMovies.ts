@@ -10,14 +10,16 @@ interface PlexMoviesParams {
   yearMin?: number;
   yearMax?: number;
   contentRating?: string;
+  durationMin?: number; // New
+  durationMax?: number; // New
   sortOrder?: string; // Added sortOrder
 }
 
 export function usePlexMovies(params: PlexMoviesParams) {
-  const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating, sortOrder } = params; // Destructure sortOrder
+  const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating, durationMin, durationMax, sortOrder } = params; // Destructure sortOrder
 
   return useQuery<Movie[], Error>({
-    queryKey: ['plexMovies', plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating, sortOrder], // Added sortOrder to queryKey
+    queryKey: ['plexMovies', plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating, durationMin, durationMax, sortOrder], // Added sortOrder to queryKey
     queryFn: async () => {
       if (!plexUrl || !plexToken || selectedLibraries.length === 0) {
         return [];
@@ -33,6 +35,8 @@ export function usePlexMovies(params: PlexMoviesParams) {
           yearMin,
           yearMax,
           contentRating,
+          durationMin, // Pass durationMin
+          durationMax, // Pass durationMax
           sortOrder, // Pass sortOrder
         },
       });
