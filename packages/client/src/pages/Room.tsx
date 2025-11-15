@@ -122,7 +122,6 @@ const RoomPage: React.FC = () => {
           const machineIdentifier = xmlDoc.documentElement.getAttribute('machineIdentifier');
           if (machineIdentifier) {
             setPlexServerId(machineIdentifier);
-            console.log('Fetched Plex Server ID:', machineIdentifier); // Add console.log
           }
         } catch (error) {
           console.error('Failed to fetch Plex server ID:', error);
