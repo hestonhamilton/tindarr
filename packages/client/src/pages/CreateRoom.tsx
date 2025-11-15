@@ -167,19 +167,22 @@ const CreateRoomPage: React.FC = () => {
   };
 
   const handleCreateRoom = () => {
-    localStorage.setItem('selectedLibraries', JSON.stringify(selectedLibraries));
-    localStorage.setItem('selectedGenres', JSON.stringify(selectedGenres));
-    localStorage.setItem('selectedContentRatings', JSON.stringify(selectedContentRatings));
-    localStorage.setItem('durationMin', durationMin || ''); // Save durationMin
-    localStorage.setItem('durationMax', durationMax || ''); // Save durationMax
-    localStorage.setItem('sortOrder', sortOrder); // Save sort order
-
     const userId = uuidv4(); // Generate UUID for userId
     localStorage.setItem('userId', userId); // Store userId
     localStorage.setItem('userName', userName); // Store userName
 
     if (socket && userName) { // Ensure userName is provided
-      socket.emit('createRoom', { user: { id: userId, name: userName } });
+      socket.emit('createRoom', {
+        user: { id: userId, name: userName },
+        selectedLibraries: selectedLibraries,
+        selectedGenres: selectedGenres,
+        yearMin: yearMin ? parseInt(yearMin, 10) : undefined,
+        yearMax: yearMax ? parseInt(yearMax, 10) : undefined,
+        durationMin: durationMin ? parseInt(durationMin, 10) * 60 * 1000 : undefined, // Convert minutes to milliseconds
+        durationMax: durationMax ? parseInt(durationMax, 10) * 60 * 1000 : undefined, // Convert minutes to milliseconds
+        selectedContentRatings: selectedContentRatings,
+        sortOrder: sortOrder,
+      });
     } else {
       alert('Please enter your name to create a room.');
     }

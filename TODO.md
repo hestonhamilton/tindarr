@@ -92,3 +92,23 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
 - [X] **Client-side (`packages/client/src/pages/Room.tsx`):**
     - [X] The `roomId` in `useParams` will now be the `roomCode`.
     - [X] Modify `socket.emit('joinRoom', ...)` to pass the `roomCode`.
+
+## Bug Fix: Movie Queue Not Shared
+
+- [X] **Server-side (`packages/server/src/types.ts`):**
+    - [X] Update `Room` interface to include movie selection criteria.
+    - [X] Update `CreateRoomPayload` to include movie selection criteria.
+- [X] **Server-side (`packages/server/src/room.ts`):**
+    - [X] Modify `createRoom` to store movie selection criteria in the `Room` object.
+- [X] **Server-side (`packages/server/src/socket.ts`):**
+    - [X] When `createRoom` is emitted, the `CreateRoomPayload` needs to include the movie selection criteria.
+    - [X] When `userJoined` is emitted, the `Room` object (with criteria) is sent to all users in the room.
+- [X] **Client-side (`packages/client/src/types.ts`):**
+    - [X] Update `CreateRoomPayload` to include the movie selection criteria.
+- [X] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
+    - [X] When emitting `createRoom`, pass the movie selection criteria to the server.
+    - [X] Remove saving movie selection criteria to `localStorage`.
+- [X] **Client-side (`packages/client/src/pages/Room.tsx`):**
+    - [X] When a user joins a room, the `usePlexMovies` hook needs to get its parameters from the *room state* (received from the server) instead of `localStorage`.
+    - [X] Listen for `userJoined` events to update the room state and re-evaluate `usePlexMovies`.
+    - [X] Remove retrieving movie selection criteria from `localStorage`.

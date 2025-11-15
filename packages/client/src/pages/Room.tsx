@@ -2,40 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePlexMovies } from '../hooks/usePlexMovies';
 import { useSocket } from '../hooks/useSocket';
-import { Movie, ClientToServerEvents, ServerToClientEvents, SelectedLibrary } from '../types'; // Import SelectedLibrary
+import { Movie, ClientToServerEvents, ServerToClientEvents, SelectedLibrary, Room } from '../types'; // Import Room
 import { Socket } from 'socket.io-client';
 
 const RoomPage: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>(); // Changed to roomCode
   const [currentMovieIndex, setCurrentMovieIndex] = useState(0);
+  const [roomState, setRoomState] = useState<Room | null>(null); // New state for room object
   const socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = useSocket();
 
   const plexUrl = localStorage.getItem('plexUrl') || '';
   const plexToken = localStorage.getItem('plexToken') || '';
-
-  const storedSelectedLibraries = localStorage.getItem('selectedLibraries');
-  const selectedLibraries: SelectedLibrary[] = storedSelectedLibraries ? JSON.parse(storedSelectedLibraries) : [];
-
-  const storedSelectedGenres = localStorage.getItem('selectedGenres');
-  const selectedGenres: string[] = storedSelectedGenres ? JSON.parse(storedSelectedGenres) : [];
-
-  const storedSelectedContentRatings = localStorage.getItem('selectedContentRatings');
-  const selectedContentRatings: string[] = storedSelectedContentRatings ? JSON.parse(storedSelectedContentRatings) : [];
-
-  const storedYearMin = localStorage.getItem('yearMin');
-  const yearMin: string | undefined = storedYearMin || undefined;
-
-  const storedYearMax = localStorage.getItem('yearMax');
-  const yearMax: string | undefined = storedYearMax || undefined;
-
-  const storedDurationMin = localStorage.getItem('durationMin');
-  const durationMin: string | undefined = storedDurationMin || undefined;
-
-  const storedDurationMax = localStorage.getItem('durationMax');
-  const durationMax: string | undefined = storedDurationMax || undefined;
-
-  const storedSortOrder = localStorage.getItem('sortOrder');
-  const sortOrder: string | undefined = storedSortOrder || undefined;
 
   const userId = localStorage.getItem('userId') || ''; // Retrieve userId
   const userName = localStorage.getItem('userName') || ''; // Retrieve userName
@@ -43,21 +20,26 @@ const RoomPage: React.FC = () => {
   const { data: movies, isLoading, isError, error } = usePlexMovies({
     plexUrl,
     plexToken,
-    selectedLibraries,
-    genre: selectedGenres.join(',') || undefined,
-    yearMin: yearMin ? parseInt(yearMin, 10) : undefined,
-    yearMax: yearMax ? parseInt(yearMax, 10) : undefined,
-    contentRating: selectedContentRatings.join(',') || undefined,
-    durationMin: durationMin ? parseInt(durationMin, 10) : undefined,
-    durationMax: durationMax ? parseInt(durationMax, 10) : undefined,
-    sortOrder: sortOrder,
-  });
+    selectedLibraries: roomState?.selectedLibraries || [], // Use from roomState
+    genre: roomState?.selectedGenres.join(',') || undefined, // Use from roomState
+    yearMin: roomState?.yearMin, // Use from roomState
+    yearMax: roomState?.yearMax, // Use from roomState
+    contentRating: roomState?.selectedContentRatings.join(',') || undefined, // Use from roomState
+    durationMin: roomState?.durationMin, // Use from roomState
+    durationMax: roomState?.durationMax, // Use from roomState
+    sortOrder: roomState?.sortOrder, // Use from roomState
+  }, { enabled: !!roomState }); // Only enable when roomState is available
 
   useEffect(() => {
     if (socket && roomCode) {
       socket.emit('joinRoom', { roomCode: roomCode || '', user: { id: userId, name: userName } });
 
-      socket.on('userJoined', (room) => {
+      socket.on('roomCreated', (room: Room) => {
+        setRoomState(room);
+      });
+
+      socket.on('userJoined', (room: Room) => {
+        setRoomState(room);
         console.log(`${room.users[room.users.length - 1].name} joined the room.`);
       });
 
@@ -67,18 +49,17 @@ const RoomPage: React.FC = () => {
 
       socket.on('movieLiked', ({ userId: likerId, movieId }) => {
         console.log(`User ${likerId} liked movie ${movieId}`);
-        // Potentially update UI to show likes
       });
 
       socket.on('movieDisliked', ({ userId: dislikerId, movieId }) => {
         console.log(`User ${dislikerId} disliked movie ${movieId}`);
-        // Potentially update UI to show dislikes
       });
     }
 
     return () => {
       if (socket) {
-        socket.emit('leaveRoom', { roomId: roomCode || '', userId }); // Use roomCode for leaveRoom
+        socket.emit('leaveRoom', { roomId: roomCode || '', userId });
+        socket.off('roomCreated'); // Clean up
         socket.off('userJoined');
         socket.off('userLeft');
         socket.off('movieLiked');
@@ -105,7 +86,7 @@ const RoomPage: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !roomState) { // Added check for roomState
     return <div>Loading movies...</div>;
   }
 

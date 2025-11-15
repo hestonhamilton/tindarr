@@ -22,7 +22,7 @@ export function createSocketServer(server: http.Server) {
     console.log('a user connected');
 
     socket.on('createRoom', (payload: CreateRoomPayload) => {
-      const room = roomManager.createRoom(payload.user);
+      const room = roomManager.createRoom(payload); // Pass the entire payload
       socket.join(room.id);
       socket.emit('roomCreated', room);
     });

@@ -5,12 +5,30 @@ export interface User {
 
 export interface Room {
   id: string;
-  code: string; // New
+  code: string;
   users: User[];
+  // New fields for movie selection criteria
+  selectedLibraries: SelectedLibrary[];
+  selectedGenres: string[];
+  yearMin?: number;
+  yearMax?: number;
+  durationMin?: number;
+  durationMax?: number;
+  selectedContentRatings: string[];
+  sortOrder: string;
 }
 
 export interface CreateRoomPayload {
   user: User;
+  // New fields for movie selection criteria
+  selectedLibraries: SelectedLibrary[];
+  selectedGenres: string[];
+  yearMin?: number;
+  yearMax?: number;
+  durationMin?: number;
+  durationMax?: number;
+  selectedContentRatings: string[];
+  sortOrder: string;
 }
 
 export interface JoinRoomPayload {

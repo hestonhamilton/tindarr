@@ -1,17 +1,26 @@
-import { Room, User } from './types';
+import { Room, User, CreateRoomPayload } from './types'; // Import CreateRoomPayload
 import crypto from 'crypto'; // Import crypto module
 
 export class RoomManager {
   private rooms: Map<string, Room> = new Map(); // Map by roomId (UUID)
   private roomCodes: Map<string, string> = new Map(); // Map roomCode to roomId
 
-  createRoom(user: User): Room {
+  createRoom(payload: CreateRoomPayload): Room { // Changed parameter to payload
     const roomId = crypto.randomUUID(); // Use UUID for internal ID
     const roomCode = this.generateRoomCode(); // Generate user-friendly code
     const room: Room = {
       id: roomId,
       code: roomCode, // Add code to room
-      users: [user],
+      users: [payload.user], // Use user from payload
+      // Store movie selection criteria from payload
+      selectedLibraries: payload.selectedLibraries,
+      selectedGenres: payload.selectedGenres,
+      yearMin: payload.yearMin,
+      yearMax: payload.yearMax,
+      durationMin: payload.durationMin,
+      durationMax: payload.durationMax,
+      selectedContentRatings: payload.selectedContentRatings,
+      sortOrder: payload.sortOrder,
     };
     this.rooms.set(roomId, room);
     this.roomCodes.set(roomCode, roomId); // Store mapping

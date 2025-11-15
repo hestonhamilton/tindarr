@@ -38,8 +38,18 @@ export interface Movie {
 }
 
 export interface ClientToServerEvents {
-  createRoom: (payload: { user: User }) => void; // Changed
-  joinRoom: (payload: { roomCode: string; user: User }) => void; // Changed
+  createRoom: (payload: {
+    user: User;
+    selectedLibraries: SelectedLibrary[];
+    selectedGenres: string[];
+    yearMin?: number;
+    yearMax?: number;
+    durationMin?: number;
+    durationMax?: number;
+    selectedContentRatings: string[];
+    sortOrder: string;
+  }) => void;
+  joinRoom: (payload: { roomCode: string; user: User }) => void;
   leaveRoom: (payload: { roomId: string; userId: string }) => void;
   likeMovie: (payload: { roomId: string; userId: string; movieId: string }) => void;
   dislikeMovie: (payload: { roomId: string; userId: string; movieId: string }) => void;
