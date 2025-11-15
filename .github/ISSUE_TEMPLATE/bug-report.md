@@ -7,17 +7,16 @@ assignees: ''
 
 ---
 
-**⚠️ Before filing a bug please be sure to have read the
-[FAQ](https://github.com/LukeChannings/moviematch#faq) and search through
-[existing issues](https://github.com/LukeChannings/moviematch/issues?q=is%3Aissue)
+**⚠️ Before filing a bug please read our docs and search through
+[existing issues](https://github.com/hestonhamilton/tindarr/issues?q=is%3Aissue)
 that might be the same as your problem. If you have a feature suggestion, please
-write about it in
-[Discussions](https://github.com/LukeChannings/moviematch/discussions). Thanks!
+open a discussion in
+[Discussions](https://github.com/hestonhamilton/tindarr/discussions). Thanks!
 ⚠️**
 
 Please fill out:
 
-- **MovieMatch version:** VERSION
+- **Tindarr version:** VERSION
 - **System:** e.g. macOS, Linux, Windows, Docker, Kubernetes, etc
 - **Plex Version:** VERSION
 

@@ -1,8 +1,0 @@
-.git
-node_modules
-.vscode
-.env
-.DS_Store
-*.sketch
-config.yaml
-web/app/dist

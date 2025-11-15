@@ -1,209 +1,160 @@
-# Release Process:
-
-# 1. Update RELEASE_NOTES.markdown and bump VERSION
-# 2. Create a release with the same text as VERSION plus a `v` prefix
-# 3. This workflow with kick in and build a Docker image and upload binaries to the release
-
 name: Release
 
 on:
   push:
     tags:
-      - "v2*"
+      - "v*"
   workflow_dispatch:
     inputs:
       version:
-        description: Version
+        description: "Version (without the v prefix)"
         required: true
 
 env:
-  DENO_VERSION: 1.10.1
+  NODE_VERSION: "22"
+  DOCKER_IMAGE: hestonhamilton/tindarr
 
 jobs:
-  build_info:
-    name: Get build info
+  build:
+    name: Build and Test
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.metadata.outputs.version }}
-      prerelease: ${{ steps.metadata.outputs.prerelease }}
-      existing_release: ${{ steps.metadata.outputs.existing_release }}
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+      prerelease: ${{ steps.meta.outputs.prerelease }}
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v2
-      - name: Get metadata
-        id: metadata
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: meta
+        shell: bash
         run: |
-          export VERSION="${{ github.event.inputs.version || github.ref }}"
-          VERSION="${VERSION#refs/tags/v}"
-          echo "::set-output name=version::${VERSION}"
-          PRERELEASE="$([[ "$VERSION" == *"alpha"* ]] || [[ "$VERSION" == *"beta"* ]] && echo "true" || echo "false")"
-          echo "::set-output name=prerelease::${PRERELEASE}"
-          response=$(curl -s -H "Accept: application/json" https://api.github.com/repos/lukechannings/moviematch/releases)
-          EXISTING_RELEASE=$( [[ "$(echo $response | jq ".[]|select(.tag_name==\"${VERSION}\")")" == "" ]] && echo "false" || echo "true" )
-          echo "::set-output name=existing_release::${EXISTING_RELEASE}"
-      - name: Check we're building the right version
-        run: |
-          if [[ "$(cat VERSION)" != "${{steps.metadata.outputs.version}}" ]]; then
-            echo "Tag version is "${{steps.metadata.outputs.version}}", but the source code version is "$(cat VERSION)". These need to match!"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+            if [[ -z "${VERSION}" ]]; then
+              echo "Version input is required when running manually."
+              exit 1
+            fi
+            TAG="v${VERSION}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${TAG#v}"
+          fi
+
+          if [[ "${TAG}" != v* ]]; then
+            TAG="v${TAG}"
+          fi
+
+          if [[ -z "${VERSION}" ]]; then
+            echo "Failed to determine version."
             exit 1
           fi
-        shell: bash
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: build_info
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@v2
-      - name: Setup Deno
-        uses: denolib/setup-deno@v2
+
+          PRERELEASE="false"
+          if [[ "${VERSION}" == *"-alpha"* || "${VERSION}" == *"-beta"* || "${VERSION}" == *"-rc"* ]]; then
+            PRERELEASE="true"
+          fi
+
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "prerelease=${PRERELEASE}" >> "${GITHUB_OUTPUT}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          deno-version: ${{ env.DENO_VERSION }}
-      - name: Setup Just
-        uses: extractions/setup-just@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-      - run: just install
-        name: Install dependencies
-      - name: Lint
-        run: just lint
-      - name: Unit tests
-        run: just test
-        env:
-          TEST_PLEX_URL: ${{ secrets.TEST_PLEX_URL }}
-          TEST_PLEX_TOKEN: ${{ secrets.TEST_PLEX_TOKEN }}
-      - name: Compile MovieMatch
-        run: just build-binary all
-      - name: Get Release Notes
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Server unit tests
+        run: npm test --workspace=packages/server
+
+      - name: Client unit tests
+        run: npm test --workspace=packages/client
+
+      - name: Build client
+        run: npm run build --workspace=packages/client
+
+      - name: Build server
+        run: npm run build --workspace=packages/server
+
+      - name: Package artifacts
         run: |
-          RELEASE_NOTES=$(deno eval -p "(await Deno.readTextFile('./RELEASE_NOTES.markdown')).match(/##\sv${{needs.build_info.outputs.version}}(?<notes>(.|\n)*?)^##\s/m)?.groups?.notes?.trim() ?? ''")
-          echo "${RELEASE_NOTES}" > build/RELEASE_NOTES.markdown
-      - uses: actions/upload-artifact@v2
+          mkdir -p release
+          CLIENT_ARCHIVE="tindarr-client-${{ steps.meta.outputs.version }}.tar.gz"
+          SERVER_ARCHIVE="tindarr-server-${{ steps.meta.outputs.version }}.tar.gz"
+          tar -czf "release/${CLIENT_ARCHIVE}" -C packages/client dist
+          tar -czf "release/${SERVER_ARCHIVE}" -C packages/server dist package.json
+          ls -lah release
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: build
-          path: ./build
-          retention-days: 1
-  e2e-tests:
-    name: E2E Tests (${{matrix.name}})
+          name: tindarr-release
+          path: release/*
+          retention-days: 3
+
+  release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
     needs: build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - target: linux-amd64
-            os: ubuntu-latest
-            name: Linux
-          - target: macos-amd64
-            os: macos-latest
-            name: macOS
-          - target: windows-amd64
-            os: windows-latest
-            name: Windows
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v2
-      - name: Setup Deno
-        uses: denolib/setup-deno@v2
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          deno-version: ${{ env.DENO_VERSION }}
-      - name: Setup Just
-        uses: extractions/setup-just@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/download-artifact@v2
+          name: tindarr-release
+          path: release
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
         with:
-          name: build
-          path: build
-      - name: Run end-to-end tests
-        run: |
-          just install-deno-dependencies
-          just test-e2e ${{ matrix.target }}
-        env:
-          PLEX_URL: ${{ secrets.TEST_PLEX_URL }}
-          PLEX_TOKEN: ${{ secrets.TEST_PLEX_TOKEN }}
-      - uses: actions/upload-artifact@v2
-        if: ${{ failure() }}
-        with:
-          name: screenshots-${{ matrix.os }}
-          path: ./screenshots
-          retention-days: 1
-  release_github:
-    name: Release (GitHub)
+          tag_name: ${{ needs.build.outputs.tag }}
+          name: ${{ needs.build.outputs.tag }}
+          files: release/*
+          generate_release_notes: true
+          prerelease: ${{ needs.build.outputs.prerelease == 'true' }}
+
+  docker:
+    name: Publish Docker Image
     runs-on: ubuntu-latest
-    needs:
-      - e2e-tests
-      - build_info
+    needs: build
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: build
-          path: build
-      - name: Create Release
-        id: create_release
-        if: ${{ needs.build_info.outputs.existing_release == 'false' }}
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: "v${{ needs.build_info.outputs.version }}"
-          release_name: "v${{ needs.build_info.outputs.version }}"
-          body_path: ./build/RELEASE_NOTES.markdown
-          prerelease: ${{ needs.build_info.outputs.prerelease == 'true' }}
-      - name: Upload binaries
-        run: |
-          set -x
-          targets=("linux-amd64" "linux-arm64" "macos-amd64" "macos-arm64" "windows-amd64")
-          assets=("-a" "./build/moviematch.js")
-          for target in ${targets[*]}; do
-            zip -r -j "./build/${target}.zip" ./build/${target}/*
-            assets+=("-a" "./build/${target}.zip")
-          done
-          hub release edit "${assets[@]}" -m "v${{ needs.build_info.outputs.version }}" "v${{ needs.build_info.outputs.version }}" || true
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: dev-drprasad/delete-tag-and-release@v0.2.0
-        if: ${{ failure() }}
-        with:
-          delete_release: true
-          tag_name: v${{ needs.build_info.outputs.version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  release_docker:
-    name: Release (Docker)
-    runs-on: ubuntu-latest
-    needs:
-      - e2e-tests
-      - build_info
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: build
-          path: build
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build & Push Docker image
-        uses: docker/build-push-action@v2
+
+      - name: Determine Docker tags
+        id: docker_meta
+        run: |
+          {
+            echo 'tags<<EOF'
+            echo "${{ env.DOCKER_IMAGE }}:${{ needs.build.outputs.version }}"
+            if [[ "${{ needs.build.outputs.prerelease }}" == "false" ]]; then
+              echo "${{ env.DOCKER_IMAGE }}:latest"
+            else
+              echo "${{ env.DOCKER_IMAGE }}:develop"
+            fi
+            echo 'EOF'
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./configs/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          file: Dockerfile
           push: true
-          build-args: |
-            VERSION=v${{needs.build_info.outputs.version}}
-          tags: |
-            lukechannings/moviematch:${{ needs.build_info.outputs.version }}
-            ${{ needs.build_info.outputs.prerelease == 'false' && 'lukechannings/moviematch:latest' || 'lukechannings/moviematch:develop' }}
+          tags: ${{ steps.docker_meta.outputs.tags }}

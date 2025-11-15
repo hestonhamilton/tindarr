@@ -1,0 +1,13 @@
+title = "tindarr secret scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allow placeholder secrets and localhost references"
+regexes = [
+  "replace-with-plex-token",
+  "http://localhost:32400",
+  "http://localhost:3001",
+  "http://localhost:5173"
+]
