@@ -152,3 +152,7 @@ We welcome contributions! Please see our [CONTRIBUTING.markdown](CONTRIBUTING.ma
 ## License
 
 This project is licensed under the terms of the [LICENSE](LICENSE) file.
+
+## Credits
+
+MovieMatch was originally created by [Luke Channings](https://github.com/LukeChannings/moviematch). This rewrite draws inspiration from his work while modernizing the stack around a React/Vite frontend and a Node/Express backend.
