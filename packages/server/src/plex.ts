@@ -40,7 +40,9 @@ interface PlexMovieResponse {
       year: number;
       summary: string;
       thumb: string;
-      contentRating?: string; // Added contentRating
+      contentRating?: string;
+      rating?: number; // Added for critic score
+      originallyAvailableAt?: string; // Added for release date
     }[];
   };
 }
@@ -189,20 +191,29 @@ export async function getLibraryYearRange(
   return null;
 }
 
+// Helper function for shuffling an array (Fisher-Yates algorithm)
+function shuffleArray<T>(array: T[]): T[] {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
 export async function getMovies(
   plexUrl: string,
   plexToken: string,
   libraryKey: string,
-  libraryType: 'movie' | 'show', // New parameter
+  libraryType: 'movie' | 'show',
   genre?: string,
   yearMin?: number,
   yearMax?: number,
-  contentRating?: string
+  contentRating?: string,
+  sortOrder: string = 'title:asc' // New parameter with default
 ): Promise<Movie[]> {
   const params: Record<string, any> = {};
-  params.type = getPlexTypeInteger(libraryType); // Add type parameter
+  params.type = getPlexTypeInteger(libraryType);
   if (genre) params.genre = genre;
-  // Removed yearMin and yearMax from params sent to Plex API
   if (contentRating) params.contentRating = contentRating;
 
   const requestUrl = `${plexUrl}/library/sections/${libraryKey}/all`;
@@ -227,13 +238,48 @@ export async function getMovies(
         filteredMetadata = filteredMetadata.filter(movie => movie.year !== undefined && movie.year <= yearMax);
       }
 
-      const movies = filteredMetadata.map((movie) => ({
+      let movies = filteredMetadata.map((movie) => ({
         key: movie.ratingKey,
         title: movie.title,
         year: movie.year,
         summary: movie.summary,
         posterUrl: movie.thumb,
+        // Add other properties if needed for sorting, e.g., rating, originallyAvailableAt
+        rating: movie.rating, // Assuming rating exists in PlexMovieResponse.Metadata
+        originallyAvailableAt: movie.originallyAvailableAt, // Assuming this exists
       }));
+
+      // Apply sorting
+      if (sortOrder === 'random') {
+        movies = shuffleArray(movies);
+      } else {
+        const [sortBy, sortDirection] = sortOrder.split(':');
+        movies.sort((a, b) => {
+          let valA: any;
+          let valB: any;
+
+          switch (sortBy) {
+            case 'title':
+              valA = a.title.toLowerCase();
+              valB = b.title.toLowerCase();
+              break;
+            case 'originallyAvailableAt':
+              valA = new Date(a.originallyAvailableAt || 0).getTime(); // Use 0 for missing dates
+              valB = new Date(b.originallyAvailableAt || 0).getTime();
+              break;
+            case 'rating':
+              valA = a.rating || 0; // Use 0 for missing ratings
+              valB = b.rating || 0;
+              break;
+            default:
+              return 0;
+          }
+
+          if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+          if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
 
       return movies;
     }

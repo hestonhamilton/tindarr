@@ -7,6 +7,16 @@ import { usePlexYearRange } from '../hooks/usePlexYearRange';
 import { usePlexContentRatings } from '../hooks/usePlexContentRatings';
 import { Library, SelectedLibrary } from '../types';
 
+// Define sorting options
+const SORT_OPTIONS = [
+  { label: 'Alphabetical (A-Z)', value: 'title:asc' },
+  { label: 'Release Date (Newest First)', value: 'originallyAvailableAt:desc' },
+  { label: 'Release Date (Oldest First)', value: 'originallyAvailableAt:asc' },
+  { label: 'Critic Score (Highest First)', value: 'rating:desc' },
+  { label: 'Critic Score (Lowest First)', value: 'rating:asc' },
+  { label: 'Random', value: 'random' },
+];
+
 const CreateRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const { data: libraries, isLoading: isLoadingLibraries, isError: isErrorLibraries, error: errorLibraries } = usePlexLibraries();
@@ -14,9 +24,10 @@ const CreateRoomPage: React.FC = () => {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [yearMin, setYearMin] = useState<string>('');
   const [yearMax, setYearMax] = useState<string>('');
-  const [selectedContentRatings, setSelectedContentRatings] = useState<string[]>([]); // New state for content ratings
+  const [selectedContentRatings, setSelectedContentRatings] = useState<string[]>([]);
   const [showAllGenres, setShowAllGenres] = useState(false);
-  const [showAllContentRatings, setShowAllContentRatings] = useState(false); // New state for show/hide content ratings
+  const [showAllContentRatings, setShowAllContentRatings] = useState(false);
+  const [sortOrder, setSortOrder] = useState<string>(SORT_OPTIONS[0].value); // New state for sort order
 
   // Fetch genres based on selected libraries
   const { data: genres, isLoading: isLoadingGenres, isError: isErrorGenres, error: errorGenres } = usePlexGenres({
@@ -40,7 +51,7 @@ const CreateRoomPage: React.FC = () => {
     genre: selectedGenres.join(',') || undefined,
     yearMin: yearMin ? parseInt(yearMin, 10) : undefined,
     yearMax: yearMax ? parseInt(yearMax, 10) : undefined,
-    contentRating: selectedContentRatings.join(',') || undefined, // Use selectedContentRatings
+    contentRating: selectedContentRatings.join(',') || undefined,
   });
 
   // Fetch year range for selected libraries
@@ -73,7 +84,7 @@ const CreateRoomPage: React.FC = () => {
         ? [...prevSelected, { key: library.key, type: library.type }]
         : prevSelected.filter((lib) => lib.key !== value);
       setSelectedGenres([]);
-      setSelectedContentRatings([]); // Clear content ratings when libraries change
+      setSelectedContentRatings([]);
       return newSelected;
     });
   };
@@ -115,14 +126,15 @@ const CreateRoomPage: React.FC = () => {
   const handleCreateRoom = () => {
     localStorage.setItem('selectedLibraries', JSON.stringify(selectedLibraries));
     localStorage.setItem('selectedGenres', JSON.stringify(selectedGenres));
-    localStorage.setItem('selectedContentRatings', JSON.stringify(selectedContentRatings)); // Save content ratings
+    localStorage.setItem('selectedContentRatings', JSON.stringify(selectedContentRatings));
+    localStorage.setItem('sortOrder', sortOrder); // Save sort order
 
     const placeholderRoomId = 'test-room-123';
     navigate(`/room/${placeholderRoomId}`);
   };
 
   const genreContainerMaxHeight = showAllGenres ? 'none' : '150px';
-  const contentRatingContainerMaxHeight = showAllContentRatings ? 'none' : '150px'; // New for content ratings
+  const contentRatingContainerMaxHeight = showAllContentRatings ? 'none' : '150px';
 
   if (isLoadingLibraries) {
     return <div>Loading libraries...</div>;
@@ -181,7 +193,7 @@ const CreateRoomPage: React.FC = () => {
         )}
       </div>
 
-      {/* New Content Rating Section */}
+      {/* Content Rating Section */}
       <div>
         <h3>Content Ratings</h3>
         {selectedLibraries.length === 0 ? (
@@ -231,8 +243,18 @@ const CreateRoomPage: React.FC = () => {
           onChange={handleYearMaxChange}
         />
       </div>
-      {/* Removed old contentRating input field */}
 
+      {/* New Sorting Options Section */}
+      <div>
+        <h3>Sort Order</h3>
+        <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+          {SORT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <h2>Movie Count Preview</h2>
       {isLoadingMovieCount && <div>Loading movie count...</div>}

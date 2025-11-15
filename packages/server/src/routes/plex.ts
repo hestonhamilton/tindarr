@@ -116,7 +116,7 @@ router.get('/movies/count', async (req, res) => {
 
 router.get('/movies', async (req, res) => {
   try {
-    const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating } = req.query;
+    const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating, sortOrder } = req.query; // Added sortOrder
 
     if (!plexUrl || !plexToken || !selectedLibraries) {
       return res.status(400).json({ error: 'Plex URL, token, and selectedLibraries are required.' });
@@ -142,7 +142,8 @@ router.get('/movies', async (req, res) => {
         genre as string | undefined,
         yearMin ? parseInt(yearMin as string, 10) : undefined,
         yearMax ? parseInt(yearMax as string, 10) : undefined,
-        contentRating as string | undefined
+        contentRating as string | undefined,
+        sortOrder as string | undefined // Pass sortOrder
       );
       allMovies.push(...movies);
     }

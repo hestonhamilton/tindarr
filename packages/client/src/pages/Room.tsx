@@ -13,9 +13,23 @@ const RoomPage: React.FC = () => {
   const plexUrl = localStorage.getItem('plexUrl') || '';
   const plexToken = localStorage.getItem('plexToken') || '';
 
-  // Retrieve selectedLibraries from localStorage
   const storedSelectedLibraries = localStorage.getItem('selectedLibraries');
   const selectedLibraries: SelectedLibrary[] = storedSelectedLibraries ? JSON.parse(storedSelectedLibraries) : [];
+
+  const storedSelectedGenres = localStorage.getItem('selectedGenres');
+  const selectedGenres: string[] = storedSelectedGenres ? JSON.parse(storedSelectedGenres) : [];
+
+  const storedSelectedContentRatings = localStorage.getItem('selectedContentRatings');
+  const selectedContentRatings: string[] = storedSelectedContentRatings ? JSON.parse(storedSelectedContentRatings) : [];
+
+  const storedYearMin = localStorage.getItem('yearMin');
+  const yearMin: string | undefined = storedYearMin || undefined;
+
+  const storedYearMax = localStorage.getItem('yearMax');
+  const yearMax: string | undefined = storedYearMax || undefined;
+
+  const storedSortOrder = localStorage.getItem('sortOrder');
+  const sortOrder: string | undefined = storedSortOrder || undefined;
 
   const userId = 'user123'; // Replace with actual user ID
   const username = 'TestUser'; // Replace with actual username
@@ -23,7 +37,12 @@ const RoomPage: React.FC = () => {
   const { data: movies, isLoading, isError, error } = usePlexMovies({
     plexUrl,
     plexToken,
-    selectedLibraries, // Pass the array of SelectedLibrary objects
+    selectedLibraries,
+    genre: selectedGenres.join(',') || undefined,
+    yearMin: yearMin ? parseInt(yearMin, 10) : undefined,
+    yearMax: yearMax ? parseInt(yearMax, 10) : undefined,
+    contentRating: selectedContentRatings.join(',') || undefined,
+    sortOrder: sortOrder,
   });
 
   useEffect(() => {

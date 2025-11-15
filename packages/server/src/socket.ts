@@ -10,7 +10,12 @@ import {
 } from './types';
 
 export function createSocketServer(server: http.Server) {
-  const io = new Server<ClientToServerEvents, ServerToClientEvents>(server);
+  const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
+    cors: {
+      origin: "http://192.168.4.14:5173", // Allow requests from your client's origin
+      methods: ["GET", "POST"]
+    }
+  });
   const roomManager = new RoomManager();
 
   io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {

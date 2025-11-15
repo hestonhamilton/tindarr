@@ -5,18 +5,19 @@ import { Movie, SelectedLibrary } from '../types'; // Import SelectedLibrary
 interface PlexMoviesParams {
   plexUrl: string;
   plexToken: string;
-  selectedLibraries: SelectedLibrary[]; // Changed from libraryKeys: string[]
+  selectedLibraries: SelectedLibrary[];
   genre?: string;
   yearMin?: number;
   yearMax?: number;
   contentRating?: string;
+  sortOrder?: string; // Added sortOrder
 }
 
 export function usePlexMovies(params: PlexMoviesParams) {
-  const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating } = params;
+  const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating, sortOrder } = params; // Destructure sortOrder
 
   return useQuery<Movie[], Error>({
-    queryKey: ['plexMovies', plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating],
+    queryKey: ['plexMovies', plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating, sortOrder], // Added sortOrder to queryKey
     queryFn: async () => {
       if (!plexUrl || !plexToken || selectedLibraries.length === 0) {
         return [];
@@ -32,6 +33,7 @@ export function usePlexMovies(params: PlexMoviesParams) {
           yearMin,
           yearMax,
           contentRating,
+          sortOrder, // Pass sortOrder
         },
       });
       return response.data; // The server will return all movies combined
