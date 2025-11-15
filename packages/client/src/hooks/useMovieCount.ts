@@ -15,10 +15,31 @@ interface MovieCountParams {
 }
 
 export function useMovieCount(params: MovieCountParams) {
-  const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating } = params;
+  const {
+    plexUrl,
+    plexToken,
+    selectedLibraries,
+    genre,
+    yearMin,
+    yearMax,
+    contentRating,
+    durationMin,
+    durationMax,
+  } = params;
 
   return useQuery<number, Error>({
-    queryKey: ['movieCount', plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating],
+    queryKey: [
+      'movieCount',
+      plexUrl,
+      plexToken,
+      selectedLibraries,
+      genre,
+      yearMin,
+      yearMax,
+      contentRating,
+      durationMin,
+      durationMax,
+    ],
     queryFn: async () => {
       if (!plexUrl || !plexToken || selectedLibraries.length === 0) {
         return 0;
@@ -33,6 +54,8 @@ export function useMovieCount(params: MovieCountParams) {
           yearMin,
           yearMax,
           contentRating,
+          durationMin,
+          durationMax,
         },
       });
       return response.data.count;

@@ -38,6 +38,7 @@ Key files:
 | Purpose | Command |
 | --- | --- |
 | Start Vite dev server | `npm run dev --workspace=packages/client` (or `cd packages/client && npm run dev`) |
+| Unit tests (Vitest) | `npm test --workspace=packages/client` |
 | Type-check + build | `npm run build --workspace=packages/client` (runs `tsc && vite build`) |
 | Playwright e2e (requires running backend) | `npm test --workspace=packages/client -- e2e/<spec>` |
 
