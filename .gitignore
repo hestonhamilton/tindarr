@@ -1,4 +1,6 @@
 .env
+.env.*
+!.env.example
 .DS_Store
 web/app/dist
 pkg.ts
@@ -9,6 +11,9 @@ node_modules/
 packages/*/node_modules
 packages/*/dist
 packages/*/build
+coverage/
+dist/
+.npmrc
 .venv*
 .cbi_analysis.toml
 cbi_compile_commands.json
