@@ -285,16 +285,24 @@ export async function getMovies(
 
           switch (sortBy) {
             case 'title':
-              valA = a.title.toLowerCase();
-              valB = b.title.toLowerCase();
+              valA = a.title?.toLowerCase() || ''; // Handle optional title
+              valB = b.title?.toLowerCase() || ''; // Handle optional title
               break;
             case 'originallyAvailableAt':
-              valA = new Date(a.originallyAvailableAt || 0).getTime(); // Use 0 for missing dates
+              valA = new Date(a.originallyAvailableAt || 0).getTime();
               valB = new Date(b.originallyAvailableAt || 0).getTime();
               break;
             case 'rating':
-              valA = a.rating || 0; // Use 0 for missing ratings
+              valA = a.rating || 0;
               valB = b.rating || 0;
+              break;
+            case 'audienceRating': // New sorting option
+              valA = a.audienceRating || 0;
+              valB = b.audienceRating || 0;
+              break;
+            case 'duration': // New sorting option
+              valA = a.duration || 0;
+              valB = b.duration || 0;
               break;
             default:
               return 0;

@@ -14,6 +14,10 @@ const SORT_OPTIONS = [
   { label: 'Release Date (Oldest First)', value: 'originallyAvailableAt:asc' },
   { label: 'Critic Score (Highest First)', value: 'rating:desc' },
   { label: 'Critic Score (Lowest First)', value: 'rating:asc' },
+  { label: 'Audience Score (Highest First)', value: 'audienceRating:desc' }, // New
+  { label: 'Audience Score (Lowest First)', value: 'audienceRating:asc' },  // New
+  { label: 'Duration (Shortest First)', value: 'duration:asc' },           // New
+  { label: 'Duration (Longest First)', value: 'duration:desc' },            // New
   { label: 'Random', value: 'random' },
 ];
 

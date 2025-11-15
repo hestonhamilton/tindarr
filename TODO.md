@@ -20,15 +20,15 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
     - [X] **Client-side (`packages/client/src/pages/Room.tsx`):**
         - [X] Retrieve `durationMin` and `durationMax` from `localStorage` and pass to `usePlexMovies`.
 
-- [ ] **Implement New Sorting Options**
-    - [ ] **Server-side (`packages/server/src/plex.ts`):**
-        - [ ] Modify `getMovies` sorting logic to handle:
+- [X] **Implement New Sorting Options**
+    - [X] **Server-side (`packages/server/src/plex.ts`):**
+        - [X] Modify `getMovies` sorting logic to handle:
             - `duration:asc` / `duration:desc`
             - `rating:asc` / `rating:desc` (critic score)
             - `audienceRating:asc` / `audienceRating:desc` (audience score)
-    - [ ] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
-        - [ ] Update `SORT_OPTIONS` to include new duration, critic rating, and audience rating sorting choices.
-        - [ ] Ensure `sortOrder` is correctly passed to `useMovieCount` and `usePlexMovies`.
+    - [X] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
+        - [X] Update `SORT_OPTIONS` to include new duration, critic rating, and audience rating sorting choices.
+        - [X] Ensure `sortOrder` is correctly passed to `useMovieCount` and `usePlexMovies`.
 
 - [ ] **Display Enhanced Movie Details on Voting Screen (`packages/client/src/pages/Room.tsx`)**
     - [ ] **Update `Movie` interface (if not already done):** Ensure `tagline`, `duration`, `rating`, `audienceRating`, `studio`, `genres`, `countries`, `directors`, `writers`, `roles` are available. (Already done in previous step for `types.ts`).
