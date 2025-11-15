@@ -172,7 +172,9 @@ export async function getMoviesCount(
       },
       params,
     });
-    totalCount += response.data.MediaContainer.Metadata.length;
+    if (response.data && response.data.MediaContainer && response.data.MediaContainer.Metadata) {
+      totalCount += response.data.MediaContainer.Metadata.length;
+    }
   }
 
   return totalCount;
