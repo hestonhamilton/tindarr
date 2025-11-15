@@ -6,9 +6,10 @@ interface MovieDetailsModalProps {
   onClose: () => void;
   plexUrl: string;
   plexToken: string;
+  plexServerId?: string | null; // New prop for Plex server ID
 }
 
-const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({ movie, onClose, plexUrl, plexToken }) => {
+const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({ movie, onClose, plexUrl, plexToken, plexServerId }) => {
   const formatDuration = (ms: number | undefined) => {
     if (ms === undefined) return '';
     const minutes = Math.floor(ms / 60000);
@@ -64,6 +65,25 @@ const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({ movie, onClose, p
             alt={movie.title}
             style={{ maxWidth: '100%', height: 'auto', marginTop: '15px', borderRadius: '5px' }}
           />
+        )}
+        {plexUrl && plexToken && movie.key && (
+          <a
+            href={`${plexUrl}/web/index.html#!/${plexServerId ? `server/${plexServerId}/` : ''}details?key=${encodeURIComponent(`/library/metadata/${movie.key}`)}${plexToken ? `&X-Plex-Token=${plexToken}` : ''}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-block',
+              marginTop: '20px',
+              padding: '10px 20px',
+              backgroundColor: '#E5A000', // Plex orange color
+              color: '#fff',
+              textDecoration: 'none',
+              borderRadius: '5px',
+              fontWeight: 'bold',
+            }}
+          >
+            Open in Plex
+          </a>
         )}
       </div>
     </div>

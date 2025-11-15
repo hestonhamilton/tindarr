@@ -5,14 +5,21 @@ import { useSocket } from '../hooks/useSocket';
 import { Movie, ClientToServerEvents, ServerToClientEvents, Room } from '../types'; // Removed SelectedLibrary
 import { Socket } from 'socket.io-client';
 import TinderCard from 'react-tinder-card'; // Imported TinderCard
+import MovieDetailsModal from '../components/MovieDetailsModal'; // Import MovieDetailsModal
+import axios from 'axios'; // Import axios
 
 const RoomPage: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>(); // Changed to roomCode
   const [roomState, setRoomState] = useState<Room | null>(null); // New state for room object
   const socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = useSocket();
 
+  // State for movie details modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+
   const plexUrl = localStorage.getItem('plexUrl') || '';
   const plexToken = localStorage.getItem('plexToken') || '';
+  const [plexServerId, setPlexServerId] = useState<string | null>(null); // State for Plex server ID
 
   const userId = localStorage.getItem('userId') || ''; // Retrieve userId
   const userName = localStorage.getItem('userName') || ''; // Retrieve userName
@@ -35,6 +42,11 @@ const RoomPage: React.FC = () => {
   // Function to handle card leaving screen
   const outOfFrame = () => { // Removed movieKey
     // console.log(movieKey + ' left the screen!'); // Removed log
+  };
+
+  const handleMovieClick = (movie: Movie) => {
+    setSelectedMovie(movie);
+    setIsModalOpen(true);
   };
 
   const { data: movies, isLoading, isError, error } = usePlexMovies({
@@ -92,6 +104,34 @@ const RoomPage: React.FC = () => {
       }
     };
   }, [socket, roomCode, userId, userName]);
+
+  // Fetch Plex server ID
+  useEffect(() => {
+    const fetchPlexServerId = async () => {
+      if (plexUrl && plexToken) {
+        try {
+          const response = await axios.get(`${plexUrl}/identity`, {
+            headers: {
+              'X-Plex-Token': plexToken,
+              'Accept': 'application/xml', // Request XML response
+            },
+          });
+          // Parse XML response to get machineIdentifier
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(response.data, 'text/xml');
+          const machineIdentifier = xmlDoc.documentElement.getAttribute('machineIdentifier');
+          if (machineIdentifier) {
+            setPlexServerId(machineIdentifier);
+            console.log('Fetched Plex Server ID:', machineIdentifier); // Add console.log
+          }
+        } catch (error) {
+          console.error('Failed to fetch Plex server ID:', error);
+        }
+      }
+    };
+
+    fetchPlexServerId();
+  }, [plexUrl, plexToken]); // Re-run when plexUrl or plexToken changes
 
   // Modified handleLike and handleDislike to accept movie object and not increment index
   const handleLike = (movie: Movie) => {
@@ -195,7 +235,11 @@ const RoomPage: React.FC = () => {
           <h3>Liked Movies</h3>
           <div style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px' }}>
             {roomState.likedMovies.map((movie) => (
-              <div key={movie.key} style={{ flexShrink: 0, textAlign: 'center', width: '100px' }}>
+              <div
+                key={movie.key}
+                style={{ flexShrink: 0, textAlign: 'center', width: '100px', cursor: 'pointer' }}
+                onClick={() => handleMovieClick(movie)}
+              >
                 <img
                   src={`${plexUrl}${movie.posterUrl}?X-Plex-Token=${plexToken}`}
                   alt={movie.title}
@@ -206,6 +250,16 @@ const RoomPage: React.FC = () => {
             ))}
           </div>
         </div>
+      )}
+
+      {isModalOpen && selectedMovie && (
+        <MovieDetailsModal
+          movie={selectedMovie}
+          onClose={() => setIsModalOpen(false)}
+          plexUrl={plexUrl}
+          plexToken={plexToken}
+          plexServerId={plexServerId} // Pass plexServerId to modal
+        />
       )}
     </div>
   );
