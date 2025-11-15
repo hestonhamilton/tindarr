@@ -7,6 +7,7 @@ import { usePlexYearRange } from '../hooks/usePlexYearRange';
 import { usePlexContentRatings } from '../hooks/usePlexContentRatings';
 import { Library, SelectedLibrary } from '../types';
 import { useSocket } from '../hooks/useSocket'; // Import useSocket
+import { v4 as uuidv4 } from 'uuid';
 
 // Define sorting options
 const SORT_OPTIONS = [
@@ -172,7 +173,7 @@ const CreateRoomPage: React.FC = () => {
     localStorage.setItem('durationMax', durationMax || ''); // Save durationMax
     localStorage.setItem('sortOrder', sortOrder); // Save sort order
 
-    const userId = crypto.randomUUID(); // Generate UUID for userId
+    const userId = uuidv4(); // Generate UUID for userId
     localStorage.setItem('userId', userId); // Store userId
     localStorage.setItem('userName', userName); // Store userName
 

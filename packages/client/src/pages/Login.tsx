@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'; // Import useEffect
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import crypto from 'crypto'; // Import crypto for UUID generation
+import { v4 as uuidv4 } from 'uuid'; // Import uuid
 
 const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +53,7 @@ const LoginPage: React.FC = () => {
       alert('Please enter your name and the room code.');
       return;
     }
-    const userId = crypto.randomUUID(); // Generate UUID for userId
+    const userId = uuidv4(); // Generate UUID for userId
     localStorage.setItem('userId', userId); // Store userId
     localStorage.setItem('userName', userName); // Store userName
     navigate(`/room/${roomCodeInput}`);
