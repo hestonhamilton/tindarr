@@ -123,13 +123,28 @@ const RoomPage: React.FC = () => {
     return <div>No more movies to swipe!</div>;
   }
 
+  const formatDuration = (ms: number | undefined) => {
+    if (ms === undefined) return '';
+    const minutes = Math.floor(ms / 60000);
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours > 0) {
+      return `${hours}h ${remainingMinutes}m`;
+    }
+    return `${remainingMinutes}m`;
+  };
+
   return (
     <div>
       <h1>Movie Room: {roomId}</h1>
       <div style={{ border: '1px solid black', padding: '20px', margin: '20px', textAlign: 'center' }}>
         <h2>{currentMovie.title} ({currentMovie.year})</h2>
+        {currentMovie.tagline && <p><i>"{currentMovie.tagline}"</i></p>}
         <img src={`${plexUrl}${currentMovie.posterUrl}?X-Plex-Token=${plexToken}`} alt={currentMovie.title} style={{ maxWidth: '300px', maxHeight: '450px' }} />
         <p>{currentMovie.summary}</p>
+        {currentMovie.duration !== undefined && <p>Duration: {formatDuration(currentMovie.duration)}</p>}
+        {currentMovie.rating !== undefined && <p>Critic Score: {currentMovie.rating} (IMDb Icon Placeholder)</p>}
+        {currentMovie.audienceRating !== undefined && <p>Audience Score: {currentMovie.audienceRating} (Rotten Tomatoes Icon Placeholder)</p>}
         <div>
           <button onClick={handleDislike} style={{ marginRight: '10px', padding: '10px 20px', backgroundColor: 'red', color: 'white', border: 'none', borderRadius: '5px' }}>Dislike</button>
           <button onClick={handleLike} style={{ padding: '10px 20px', backgroundColor: 'green', color: 'white', border: 'none', borderRadius: '5px' }}>Like</button>

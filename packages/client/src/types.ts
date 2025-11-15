@@ -21,6 +21,9 @@ export interface Movie {
   contentRating?: string;
   rating?: number;
   originallyAvailableAt?: string;
+  audienceRating?: number; // New
+  audienceRatingImage?: string; // New
+  ratingImage?: string; // New
 }
 
 export interface ClientToServerEvents {

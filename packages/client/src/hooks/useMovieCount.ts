@@ -10,6 +10,8 @@ interface MovieCountParams {
   yearMin?: number;
   yearMax?: number;
   contentRating?: string;
+  durationMin?: number; // New
+  durationMax?: number; // New
 }
 
 export function useMovieCount(params: MovieCountParams) {

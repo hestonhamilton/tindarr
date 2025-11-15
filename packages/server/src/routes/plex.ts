@@ -76,7 +76,7 @@ router.get('/years/range', async (req, res) => {
 
 router.get('/movies/count', async (req, res) => {
   try {
-    const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating } = req.query;
+    const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating, durationMin, durationMax } = req.query; // Added durationMin, durationMax
 
     if (!plexUrl || !plexToken || !selectedLibraries) {
       return res.status(400).json({ error: 'Plex URL, token, and selectedLibraries are required.' });
@@ -102,7 +102,9 @@ router.get('/movies/count', async (req, res) => {
         genre as string,
         yearMin ? parseInt(yearMin as string, 10) : undefined,
         yearMax ? parseInt(yearMax as string, 10) : undefined,
-        contentRating as string
+        contentRating as string,
+        durationMin ? parseInt(durationMin as string, 10) : undefined, // Parse durationMin
+        durationMax ? parseInt(durationMax as string, 10) : undefined // Parse durationMax
       );
       totalCount += count;
     }
@@ -116,7 +118,7 @@ router.get('/movies/count', async (req, res) => {
 
 router.get('/movies', async (req, res) => {
   try {
-    const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating, sortOrder } = req.query; // Added sortOrder
+    const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating, durationMin, durationMax, sortOrder } = req.query; // Added durationMin, durationMax
 
     if (!plexUrl || !plexToken || !selectedLibraries) {
       return res.status(400).json({ error: 'Plex URL, token, and selectedLibraries are required.' });
@@ -143,6 +145,8 @@ router.get('/movies', async (req, res) => {
         yearMin ? parseInt(yearMin as string, 10) : undefined,
         yearMax ? parseInt(yearMax as string, 10) : undefined,
         contentRating as string | undefined,
+        durationMin ? parseInt(durationMin as string, 10) : undefined, // Parse durationMin
+        durationMax ? parseInt(durationMax as string, 10) : undefined, // Parse durationMax
         sortOrder as string | undefined // Pass sortOrder
       );
       allMovies.push(...movies);
