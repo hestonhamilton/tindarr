@@ -74,6 +74,7 @@ Additional deep dives are available in:
 - [`docs/configuration.md`](docs/configuration.md) – comprehensive environment variable reference
 - [`docs/docker-compose.md`](docs/docker-compose.md) – container-based workflow
 - [`docs/reverse-proxy.md`](docs/reverse-proxy.md) – examples for fronting MovieMatch with Nginx/Traefik/Apache
+- [`docs/AGENTS.md`](docs/AGENTS.md) – internal guidelines for automated contributors
 
 #### Running the application (Node dev servers)
 
