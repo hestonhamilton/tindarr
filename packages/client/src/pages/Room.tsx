@@ -8,19 +8,21 @@ import { Socket } from 'socket.io-client';
 const RoomPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const [currentMovieIndex, setCurrentMovieIndex] = useState(0);
-  const socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = useSocket();
+  const socket: Socket<ClientToServerEvents, ServerToClientEvents> | null = useSocket(); // Corrected type order
 
-  // For now, hardcode these values. In a real scenario, they would come from room creation or context.
   const plexUrl = localStorage.getItem('plexUrl') || '';
   const plexToken = localStorage.getItem('plexToken') || '';
-  const libraryKey = '1'; // Assuming a default movie library for now
+  // Retrieve libraryKeys from localStorage
+  const storedLibraryKeys = localStorage.getItem('selectedLibraryKeys');
+  const libraryKeys = storedLibraryKeys ? JSON.parse(storedLibraryKeys) : [];
+
   const userId = 'user123'; // Replace with actual user ID
   const username = 'TestUser'; // Replace with actual username
 
   const { data: movies, isLoading, isError, error } = usePlexMovies({
     plexUrl,
     plexToken,
-    libraryKey,
+    libraryKeys, // Pass the array of library keys
   });
 
   useEffect(() => {
@@ -87,7 +89,7 @@ const RoomPage: React.FC = () => {
     return <div>No movies found for this room.</div>;
   }
 
-  const currentMovie = movies[currentMovieIndex];
+  const currentMovie: Movie | undefined = movies[currentMovieIndex];
 
   if (!currentMovie) {
     return <div>No more movies to swipe!</div>;

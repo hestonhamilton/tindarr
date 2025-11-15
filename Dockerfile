@@ -1,10 +1,17 @@
 # Stage 1: Build the client
 FROM node:20-alpine AS client-builder
 
-WORKDIR /app/packages/client
+WORKDIR /app
 
-COPY packages/client/package.json packages/client/package-lock.json ./
+# Copy root package.json and package-lock.json
+COPY package.json package-lock.json ./
+# Copy the entire packages directory
+COPY packages packages
+
+# Install dependencies for all workspaces
 RUN npm ci
+
+WORKDIR /app/packages/client
 
 COPY packages/client/src ./src
 COPY packages/client/index.html .
@@ -19,10 +26,17 @@ RUN npm run build
 # Stage 2: Build the server
 FROM node:20-alpine AS server-builder
 
-WORKDIR /app/packages/server
+WORKDIR /app
 
-COPY packages/server/package.json packages/server/package-lock.json ./
+# Copy root package.json and package-lock.json
+COPY package.json package-lock.json ./
+# Copy the entire packages directory
+COPY packages packages
+
+# Install dependencies for all workspaces
 RUN npm ci
+
+WORKDIR /app/packages/server
 
 COPY packages/server/src ./src
 COPY packages/server/tsconfig.json .

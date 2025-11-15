@@ -61,14 +61,36 @@ export async function getNewPin(): Promise<Pin> {
 }
 
 export async function getAuthToken(pinId: number): Promise<string | null> {
-  const response = await axios.get<{ authToken: string }>(`${PLEX_API_BASE_URL}/pins/${pinId}`, {
-    headers: {
-      'X-Plex-Client-Identifier': 'moviematch-v2',
-      'Accept': 'application/json',
-    },
-  });
+  const MAX_POLLING_ATTEMPTS = 30; // Poll for 30 * 2 seconds = 1 minute
+  const POLLING_INTERVAL_MS = 2000; // 2 seconds
 
-  return response.data.authToken ?? null;
+  for (let i = 0; i < MAX_POLLING_ATTEMPTS; i++) {
+    try {
+      const response = await axios.get<{ authToken: string; code: string; id: number; product: string; trusted: boolean; expiresAt: string; createdAt: string; clientIdentifier: string; newRegistration: boolean; }>
+      (`${PLEX_API_BASE_URL}/pins/${pinId}`, {
+        headers: {
+          'X-Plex-Client-Identifier': 'moviematch-v2',
+          'Accept': 'application/json',
+        },
+      });
+
+      if (response.data.authToken) {
+        return response.data.authToken;
+      }
+    } catch (error: any) {
+      // Log error but continue polling if it's not a critical error
+      // For example, a 404 might mean the pin is not yet authorized, so we continue polling.
+      if (error.response && error.response.status === 404) {
+        console.warn(`Polling for Plex token (pinId: ${pinId}) - not yet authorized (attempt ${i + 1}).`);
+      } else {
+        console.error(`Polling for Plex token failed (pinId: ${pinId}, attempt ${i + 1}):`, error.message);
+      }
+    }
+
+    await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL_MS));
+  }
+
+  return null; // Token not found after max attempts
 }
 
 export async function getLibraries(

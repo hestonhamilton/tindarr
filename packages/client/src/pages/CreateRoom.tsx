@@ -33,6 +33,9 @@ const CreateRoomPage: React.FC = () => {
   };
 
   const handleCreateRoom = () => {
+    // Store selected library keys in localStorage
+    localStorage.setItem('selectedLibraryKeys', JSON.stringify(selectedLibraries));
+
     // In a real scenario, this would make an API call to create a room and get a real roomId
     const placeholderRoomId = 'test-room-123';
     navigate(`/room/${placeholderRoomId}`);

@@ -5,7 +5,7 @@ import { Movie } from '../types';
 interface PlexMoviesParams {
   plexUrl: string;
   plexToken: string;
-  libraryKey: string;
+  libraryKeys: string[]; // Changed from libraryKey: string
   genre?: string;
   yearMin?: number;
   yearMax?: number;
@@ -13,27 +13,32 @@ interface PlexMoviesParams {
 }
 
 export function usePlexMovies(params: PlexMoviesParams) {
-  const { plexUrl, plexToken, libraryKey, genre, yearMin, yearMax, contentRating } = params;
+  const { plexUrl, plexToken, libraryKeys, genre, yearMin, yearMax, contentRating } = params;
 
   return useQuery<Movie[], Error>({
-    queryKey: ['plexMovies', plexUrl, plexToken, libraryKey, genre, yearMin, yearMax, contentRating],
+    queryKey: ['plexMovies', plexUrl, plexToken, libraryKeys, genre, yearMin, yearMax, contentRating],
     queryFn: async () => {
-      if (!plexUrl || !plexToken || !libraryKey) {
+      if (!plexUrl || !plexToken || libraryKeys.length === 0) { // Check for empty libraryKeys array
         return [];
       }
-      const response = await axios.get<Movie[]>('/api/plex/movies', {
-        params: {
-          plexUrl,
-          plexToken,
-          libraryKey,
-          genre,
-          yearMin,
-          yearMax,
-          contentRating,
-        },
-      });
-      return response.data;
+
+      const allMovies: Movie[] = [];
+      for (const key of libraryKeys) {
+        const response = await axios.get<Movie[]>('/api/plex/movies', {
+          params: {
+            plexUrl,
+            plexToken,
+            libraryKey: key, // Pass individual library key
+            genre,
+            yearMin,
+            yearMax,
+            contentRating,
+          },
+        });
+        allMovies.push(...response.data);
+      }
+      return allMovies;
     },
-    enabled: !!plexUrl && !!plexToken && !!libraryKey,
+    enabled: !!plexUrl && !!plexToken && libraryKeys.length > 0, // Enable only if libraryKeys is not empty
   });
 }
