@@ -42,3 +42,8 @@ export interface Movie {
   summary: string;
   posterUrl: string;
 }
+
+export interface SelectedLibrary {
+  key: string;
+  type: 'movie' | 'show';
+}

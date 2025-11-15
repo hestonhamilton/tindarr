@@ -1,44 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Import useEffect
 import { useNavigate } from 'react-router-dom';
 import { usePlexLibraries } from '../hooks/usePlexLibraries';
 import { useMovieCount } from '../hooks/useMovieCount';
-import { usePlexGenres } from '../hooks/usePlexGenres'; // Import usePlexGenres
-import { Library } from '../types';
+import { usePlexGenres } from '../hooks/usePlexGenres';
+import { usePlexYearRange } from '../hooks/usePlexYearRange'; // Import usePlexYearRange
+import { Library, SelectedLibrary } from '../types';
 
 const CreateRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const { data: libraries, isLoading: isLoadingLibraries, isError: isErrorLibraries, error: errorLibraries } = usePlexLibraries();
-  const [selectedLibraries, setSelectedLibraries] = useState<string[]>([]);
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]); // New state for selected genres
+  const [selectedLibraries, setSelectedLibraries] = useState<SelectedLibrary[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [yearMin, setYearMin] = useState<string>('');
   const [yearMax, setYearMax] = useState<string>('');
   const [contentRating, setContentRating] = useState<string>('');
-  const [showAllGenres, setShowAllGenres] = useState(false); // New state for showing all genres
+  const [showAllGenres, setShowAllGenres] = useState(false);
 
   // Fetch genres based on selected libraries
   const { data: genres, isLoading: isLoadingGenres, isError: isErrorGenres, error: errorGenres } = usePlexGenres({
     plexUrl: localStorage.getItem('plexUrl') || '',
     plexToken: localStorage.getItem('plexToken') || '',
-    libraryKeys: selectedLibraries,
+    libraryKeys: selectedLibraries.map(lib => lib.key),
   });
 
+  // Fetch movie count based on selected libraries and filters
   const { data: movieCount, isLoading: isLoadingMovieCount, isError: isErrorMovieCount, error: errorMovieCount } = useMovieCount({
     plexUrl: localStorage.getItem('plexUrl') || '',
     plexToken: localStorage.getItem('plexToken') || '',
-    libraryKeys: selectedLibraries,
-    genre: selectedGenres.join(',') || undefined, // Pass selected genres as a comma-separated string
+    selectedLibraries: selectedLibraries,
+    genre: selectedGenres.join(',') || undefined,
     yearMin: yearMin ? parseInt(yearMin, 10) : undefined,
     yearMax: yearMax ? parseInt(yearMax, 10) : undefined,
     contentRating: contentRating || undefined,
   });
 
+  // Fetch year range for selected libraries
+  const { data: yearRange } = usePlexYearRange({
+    plexUrl: localStorage.getItem('plexUrl') || '',
+    plexToken: localStorage.getItem('plexToken') || '',
+    selectedLibraries: selectedLibraries,
+  });
+
+  // Effect to update yearMin/yearMax when yearRange changes, only if fields are empty
+  useEffect(() => {
+    if (yearRange && yearRange.minYear !== null && yearRange.maxYear !== null) {
+      if (!yearMin) {
+        setYearMin(yearRange.minYear.toString());
+      }
+      if (!yearMax) {
+        setYearMax(yearRange.maxYear.toString());
+      }
+    }
+  }, [yearRange, yearMin, yearMax]);
+
   const handleLibraryChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = event.target;
+    const library = libraries?.find(lib => lib.key === value);
+
+    if (!library) return;
+
     setSelectedLibraries((prevSelected) => {
       const newSelected = checked
-        ? [...prevSelected, value]
-        : prevSelected.filter((libraryId) => libraryId !== value);
-      // Clear selected genres when libraries change
+        ? [...prevSelected, { key: library.key, type: library.type }] // Store key and type
+        : prevSelected.filter((lib) => lib.key !== value);
       setSelectedGenres([]);
       return newSelected;
     });
@@ -54,17 +78,14 @@ const CreateRoomPage: React.FC = () => {
   };
 
   const handleCreateRoom = () => {
-    // Store selected library keys and genres in localStorage
-    localStorage.setItem('selectedLibraryKeys', JSON.stringify(selectedLibraries));
-    localStorage.setItem('selectedGenres', JSON.stringify(selectedGenres)); // Store selected genres
+    localStorage.setItem('selectedLibraries', JSON.stringify(selectedLibraries));
+    localStorage.setItem('selectedGenres', JSON.stringify(selectedGenres));
 
-    // In a real scenario, this would make an API call to create a room and get a real roomId
     const placeholderRoomId = 'test-room-123';
     navigate(`/room/${placeholderRoomId}`);
   };
 
-  const displayedGenres = genres; // Always render all genres
-  const genreContainerMaxHeight = showAllGenres ? 'none' : '150px'; // Dynamic maxHeight
+  const genreContainerMaxHeight = showAllGenres ? 'none' : '150px';
 
   if (isLoadingLibraries) {
     return <div>Loading libraries...</div>;
@@ -84,7 +105,7 @@ const CreateRoomPage: React.FC = () => {
             type="checkbox"
             id={library.key}
             value={library.key}
-            checked={selectedLibraries.includes(library.key)}
+            checked={selectedLibraries.some(lib => lib.key === library.key)}
             onChange={handleLibraryChange}
           />
           <label htmlFor={library.key}>{library.title}</label>
@@ -100,8 +121,8 @@ const CreateRoomPage: React.FC = () => {
           <>
             {isLoadingGenres && <div>Loading genres...</div>}
             {isErrorGenres && <div>Error loading genres: {errorGenres?.message}</div>}
-            <div style={{ maxHeight: genreContainerMaxHeight, overflowY: 'auto', border: '1px solid #ccc', padding: '5px' }}> {/* Dynamic maxHeight */}
-              {displayedGenres?.map((genreName) => ( // Always map all genres
+            <div style={{ maxHeight: genreContainerMaxHeight, overflowY: 'auto', border: '1px solid #ccc', padding: '5px' }}>
+              {genres?.map((genreName: string) => ( // Explicitly type genreName
                 <div key={genreName} style={{ marginBottom: '5px' }}>
                   <input
                     type="checkbox"
@@ -114,7 +135,7 @@ const CreateRoomPage: React.FC = () => {
                 </div>
               ))}
             </div>
-            {genres && genres.length > 0 && ( // Only show button if there are genres
+            {genres && genres.length > 0 && (
               <button onClick={() => setShowAllGenres(!showAllGenres)} style={{ marginTop: '10px' }}>
                 {showAllGenres ? 'Show Less' : 'Show More'}
               </button>

@@ -28,3 +28,8 @@ export interface ServerToClientEvents {
   movieLiked: (payload: { userId: string; movieId: string }) => void;
   movieDisliked: (payload: { userId: string; movieId: string }) => void;
 }
+
+export interface SelectedLibrary {
+  key: string;
+  type: 'movie' | 'show';
+}

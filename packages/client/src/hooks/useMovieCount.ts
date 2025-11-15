@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { SelectedLibrary } from '../types'; // Import SelectedLibrary
 
 interface MovieCountParams {
   plexUrl: string;
   plexToken: string;
-  libraryKeys: string[];
+  selectedLibraries: SelectedLibrary[]; // Changed from libraryKeys: string[]
   genre?: string;
   yearMin?: number;
   yearMax?: number;
@@ -12,19 +13,20 @@ interface MovieCountParams {
 }
 
 export function useMovieCount(params: MovieCountParams) {
-  const { plexUrl, plexToken, libraryKeys, genre, yearMin, yearMax, contentRating } = params;
+  const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating } = params;
 
   return useQuery<number, Error>({
-    queryKey: ['movieCount', plexUrl, plexToken, libraryKeys, genre, yearMin, yearMax, contentRating],
+    queryKey: ['movieCount', plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating],
     queryFn: async () => {
-      if (!plexUrl || !plexToken || libraryKeys.length === 0) {
+      if (!plexUrl || !plexToken || selectedLibraries.length === 0) {
         return 0;
       }
       const response = await axios.get<{ count: number }>('/api/plex/movies/count', {
         params: {
           plexUrl,
           plexToken,
-          libraryKeys: libraryKeys.join(','), // Send as comma-separated string
+          // Send selectedLibraries as a JSON string
+          selectedLibraries: JSON.stringify(selectedLibraries),
           genre,
           yearMin,
           yearMax,
@@ -33,6 +35,6 @@ export function useMovieCount(params: MovieCountParams) {
       });
       return response.data.count;
     },
-    enabled: !!plexUrl && !!plexToken && libraryKeys.length > 0,
+    enabled: !!plexUrl && !!plexToken && selectedLibraries.length > 0,
   });
 }

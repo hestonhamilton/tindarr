@@ -128,7 +128,8 @@ describe('Plex API', () => {
         config: { url: '' },
       });
 
-      const result = await getMovies('http://localhost:32400', 'test-token', '1', undefined, undefined, undefined);
+      // Updated call to getMovies
+      const result = await getMovies('http://localhost:32400', 'test-token', '1', 'movie', undefined, undefined, undefined, undefined);
 
       expect(result).toEqual([
         { key: '3', title: 'Movie 1', year: 2020, summary: 'Summary 1', posterUrl: '/poster1.jpg' },
@@ -141,7 +142,9 @@ describe('Plex API', () => {
             'X-Plex-Token': 'test-token',
             'Accept': 'application/json',
           },
-          params: {},
+          params: {
+            type: 1, // Added type
+          },
         }
       );
     });
@@ -162,7 +165,8 @@ describe('Plex API', () => {
         config: { url: '' },
       });
 
-      const result = await getMovies('http://localhost:32400', 'test-token', '1', 'Action', 2020, 2020, 'PG-13');
+      // Updated call to getMovies
+      const result = await getMovies('http://localhost:32400', 'test-token', '1', 'movie', 'Action', 2020, 2020, 'PG-13');
 
       expect(result).toEqual([
         { key: '3', title: 'Movie 1', year: 2020, summary: 'Summary 1', posterUrl: '/poster1.jpg' },
@@ -175,9 +179,10 @@ describe('Plex API', () => {
             'Accept': 'application/json',
           },
           params: {
+            type: 1, // Added type
             genre: 'Action',
-            'year>=': 2020,
-            'year<=': 2020,
+            'year.gte': 2020, // Changed from year>=
+            'year.lte': 2020, // Changed from year<=
             contentRating: 'PG-13',
           },
         }
@@ -186,7 +191,7 @@ describe('Plex API', () => {
   });
 
   describe('getMoviesCount', () => {
-    it('should return the count of movies from multiple libraries with filters', async () => {
+    it('should return the count of movies from a single library with filters', async () => { // Changed description
       mockedAxios.get
         .mockResolvedValueOnce({
           data: {
@@ -201,30 +206,21 @@ describe('Plex API', () => {
           statusText: 'OK',
           headers: {},
           config: { url: '' },
-        })
-        .mockResolvedValueOnce({
-          data: {
-            MediaContainer: {
-              Metadata: [{ ratingKey: '3', title: 'Movie C' }],
-            },
-          },
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config: { url: '' },
         });
 
+      // Updated call to getMoviesCount
       const result = await getMoviesCount(
         'http://localhost:32400',
         'test-token',
-        ['1', '2'],
+        '1', // Single library key
+        'movie', // Library type
         'Comedy',
         1990,
         2000,
         'PG'
       );
 
-      expect(result).toBe(3);
+      expect(result).toBe(2); // Expect count for a single library
       expect(mockedAxios.get).toHaveBeenCalledWith(
         'http://localhost:32400/library/sections/1/all',
         {
@@ -233,24 +229,10 @@ describe('Plex API', () => {
             'Accept': 'application/json',
           },
           params: {
+            type: 1, // Added type
             genre: 'Comedy',
-            'year>=': 1990,
-            'year<=': 2000,
-            contentRating: 'PG',
-          },
-        }
-      );
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        'http://localhost:32400/library/sections/2/all',
-        {
-          headers: {
-            'X-Plex-Token': 'test-token',
-            'Accept': 'application/json',
-          },
-          params: {
-            genre: 'Comedy',
-            'year>=': 1990,
-            'year<=': 2000,
+            'year.gte': 1990, // Changed from year>=
+            'year.lte': 2000, // Changed from year<=
             contentRating: 'PG',
           },
         }

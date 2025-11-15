@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { Movie } from '../types';
+import { Movie, SelectedLibrary } from '../types'; // Import SelectedLibrary
 
 interface PlexMoviesParams {
   plexUrl: string;
   plexToken: string;
-  libraryKeys: string[]; // Changed from libraryKey: string
+  selectedLibraries: SelectedLibrary[]; // Changed from libraryKeys: string[]
   genre?: string;
   yearMin?: number;
   yearMax?: number;
@@ -13,32 +13,29 @@ interface PlexMoviesParams {
 }
 
 export function usePlexMovies(params: PlexMoviesParams) {
-  const { plexUrl, plexToken, libraryKeys, genre, yearMin, yearMax, contentRating } = params;
+  const { plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating } = params;
 
   return useQuery<Movie[], Error>({
-    queryKey: ['plexMovies', plexUrl, plexToken, libraryKeys, genre, yearMin, yearMax, contentRating],
+    queryKey: ['plexMovies', plexUrl, plexToken, selectedLibraries, genre, yearMin, yearMax, contentRating],
     queryFn: async () => {
-      if (!plexUrl || !plexToken || libraryKeys.length === 0) { // Check for empty libraryKeys array
+      if (!plexUrl || !plexToken || selectedLibraries.length === 0) {
         return [];
       }
 
-      const allMovies: Movie[] = [];
-      for (const key of libraryKeys) {
-        const response = await axios.get<Movie[]>('/api/plex/movies', {
-          params: {
-            plexUrl,
-            plexToken,
-            libraryKey: key, // Pass individual library key
-            genre,
-            yearMin,
-            yearMax,
-            contentRating,
-          },
-        });
-        allMovies.push(...response.data);
-      }
-      return allMovies;
+      const response = await axios.get<Movie[]>('/api/plex/movies', {
+        params: {
+          plexUrl,
+          plexToken,
+          // Send selectedLibraries as a JSON string
+          selectedLibraries: JSON.stringify(selectedLibraries),
+          genre,
+          yearMin,
+          yearMax,
+          contentRating,
+        },
+      });
+      return response.data; // The server will return all movies combined
     },
-    enabled: !!plexUrl && !!plexToken && libraryKeys.length > 0, // Enable only if libraryKeys is not empty
+    enabled: !!plexUrl && !!plexToken && selectedLibraries.length > 0,
   });
 }

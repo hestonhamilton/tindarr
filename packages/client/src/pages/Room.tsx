@@ -2,19 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePlexMovies } from '../hooks/usePlexMovies';
 import { useSocket } from '../hooks/useSocket';
-import { Movie, ClientToServerEvents, ServerToClientEvents } from '../types';
+import { Movie, ClientToServerEvents, ServerToClientEvents, SelectedLibrary } from '../types'; // Import SelectedLibrary
 import { Socket } from 'socket.io-client';
 
 const RoomPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const [currentMovieIndex, setCurrentMovieIndex] = useState(0);
-  const socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = useSocket(); // Corrected type order
+  const socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = useSocket();
 
   const plexUrl = localStorage.getItem('plexUrl') || '';
   const plexToken = localStorage.getItem('plexToken') || '';
-  // Retrieve libraryKeys from localStorage
-  const storedLibraryKeys = localStorage.getItem('selectedLibraryKeys');
-  const libraryKeys = storedLibraryKeys ? JSON.parse(storedLibraryKeys) : [];
+
+  // Retrieve selectedLibraries from localStorage
+  const storedSelectedLibraries = localStorage.getItem('selectedLibraries');
+  const selectedLibraries: SelectedLibrary[] = storedSelectedLibraries ? JSON.parse(storedSelectedLibraries) : [];
 
   const userId = 'user123'; // Replace with actual user ID
   const username = 'TestUser'; // Replace with actual username
@@ -22,7 +23,7 @@ const RoomPage: React.FC = () => {
   const { data: movies, isLoading, isError, error } = usePlexMovies({
     plexUrl,
     plexToken,
-    libraryKeys, // Pass the array of library keys
+    selectedLibraries, // Pass the array of SelectedLibrary objects
   });
 
   useEffect(() => {
