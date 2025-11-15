@@ -182,7 +182,8 @@ const RoomPage: React.FC = () => {
               color: '#fff',
               textShadow: '2px 2px 4px rgba(0,0,0,0.7)'
             }}>
-
+              <h2 style={{ margin: '10px' }}>{currentMovie.title} ({currentMovie.year})</h2>
+              {currentMovie.tagline && <p style={{ margin: '0 10px 10px 10px', textAlign: 'center' }}><i>"{currentMovie.tagline}"</i></p>}
               <p>{currentMovie.summary}</p> {/* Display summary */}
               {currentMovie.duration !== undefined && <p>Duration: {formatDuration(currentMovie.duration)}</p>} {/* Display duration */}
               {currentMovie.rating !== undefined && <p>Critic Score: {currentMovie.rating} (IMDb Icon Placeholder)</p>} {/* Display rating */}
