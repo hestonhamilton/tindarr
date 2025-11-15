@@ -6,7 +6,21 @@ import {
   ClientToServerEvents,
   ServerToClientEvents,
   User,
+  CreateRoomPayload, // Import CreateRoomPayload
+  SelectedLibrary, // Import SelectedLibrary
 } from './types';
+
+const mockCreateRoomPayload = (user: User): CreateRoomPayload => ({
+  user,
+  selectedLibraries: [{ key: '1', type: 'movie' }],
+  selectedGenres: ['Action'],
+  yearMin: 2000,
+  yearMax: 2020,
+  durationMin: 60000, // 1 minute in ms
+  durationMax: 12000000, // 200 minutes in ms
+  selectedContentRatings: ['PG'],
+  sortOrder: 'title:asc',
+});
 
 describe('Socket.IO server', () => {
   let io: Server<ClientToServerEvents, ServerToClientEvents>;
@@ -45,21 +59,20 @@ describe('Socket.IO server', () => {
     server.close();
   });
 
-  it('should create a room', (done) => {
-    const user: User = { id: '1', name: 'test' };
-    clientSocket.emit('createRoom', { user });
-    clientSocket.on('roomCreated', (room) => {
+      it('should create a room', (done) => {
+        const user: User = { id: '1', name: 'test' };
+        clientSocket.emit('createRoom', mockCreateRoomPayload(user));    clientSocket.on('roomCreated', (room) => {
       expect(room).toBeDefined();
       expect(room.users).toHaveLength(1);
       expect(room.users[0]).toEqual(user);
+      expect(room.selectedLibraries).toEqual(mockCreateRoomPayload(user).selectedLibraries); // Verify new fields
       done();
     });
   });
 
-  it('should join a room', (done) => {
-    const user1: User = { id: '1', name: 'test1' };
-    clientSocket.emit('createRoom', { user: user1 });
-    clientSocket.on('roomCreated', (room) => {
+      it('should join a room', (done) => {
+        const user1: User = { id: '1', name: 'test1' };
+        clientSocket.emit('createRoom', mockCreateRoomPayload(user1));    clientSocket.on('roomCreated', (room) => {
       const user2: User = { id: '2', name: 'test2' };
       const client2 = Client(`http://localhost:${port}`);
       client2.on('connect', () => {
@@ -88,10 +101,9 @@ describe('Socket.IO server', () => {
     });
   });
 
-  it('should leave a room', (done) => {
-    const user: User = { id: '1', name: 'test' };
-    clientSocket.emit('createRoom', { user });
-    clientSocket.on('roomCreated', (room) => {
+      it('should leave a room', (done) => {
+        const user: User = { id: '1', name: 'test' };
+        clientSocket.emit('createRoom', mockCreateRoomPayload(user));    clientSocket.on('roomCreated', (room) => {
       clientSocket.emit('leaveRoom', { roomId: room.id, userId: user.id });
       clientSocket.on('userLeft', (room) => {
         expect(room.users).toHaveLength(0);

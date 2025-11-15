@@ -105,6 +105,7 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
     - [X] When `userJoined` is emitted, the `Room` object (with criteria) is sent to all users in the room.
 - [X] **Client-side (`packages/client/src/types.ts`):**
     - [X] Update `CreateRoomPayload` to include the movie selection criteria.
+    - [X] Update `Room` interface to include movie selection criteria.
 - [X] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
     - [X] When emitting `createRoom`, pass the movie selection criteria to the server.
     - [X] Remove saving movie selection criteria to `localStorage`.
@@ -112,3 +113,23 @@ This document outlines the tasks for enhancing movie display, filtering, and sor
     - [X] When a user joins a room, the `usePlexMovies` hook needs to get its parameters from the *room state* (received from the server) instead of `localStorage`.
     - [X] Listen for `userJoined` events to update the room state and re-evaluate `usePlexMovies`.
     - [X] Remove retrieving movie selection criteria from `localStorage`.
+
+## Bug Fix: Client-side `crypto.randomUUID` runtime error
+
+- [X] **Client-side (`packages/client/package.json`):**
+    - [X] Install `uuid` package.
+- [X] **Client-side (`packages/client/src/pages/CreateRoom.tsx`):**
+    - [X] Update to use `uuidv4()` for UUID generation.
+- [X] **Client-side (`packages/client/src/pages/Login.tsx`):**
+    - [X] Update to use `uuidv4()` for UUID generation.
+
+## Bug Fix: Client-side routing issue
+
+- [X] **Client-side (`packages/client/src/App.tsx`):**
+    - [X] Update route path for `RoomPage` and `MatchPage` from `/room/:roomId` to `/room/:roomCode`.
+
+## Cleanup: Debugging Artifacts
+
+- [X] **Client-side (`packages/client/src/pages/Room.tsx`):**
+    - [X] Remove debug logging.
+    - [X] Remove temporary debug UI element.

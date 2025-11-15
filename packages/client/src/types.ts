@@ -13,6 +13,15 @@ export interface Room {
   id: string;
   code: string;
   users: User[];
+  // New fields for movie selection criteria
+  selectedLibraries: SelectedLibrary[];
+  selectedGenres: string[];
+  yearMin?: number;
+  yearMax?: number;
+  durationMin?: number;
+  durationMax?: number;
+  selectedContentRatings: string[];
+  sortOrder: string;
 }
 
 export interface Movie {

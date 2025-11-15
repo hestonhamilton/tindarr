@@ -12,8 +12,8 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/create-room" element={<CreateRoomPage />} />
-        <Route path="/room/:roomId" element={<RoomPage />} />
-        <Route path="/room/:roomId/matches" element={<MatchPage />} />
+        <Route path="/room/:roomCode" element={<RoomPage />} />
+        <Route path="/room/:roomCode/matches" element={<MatchPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         {/* Add other routes here */}
       </Routes>
