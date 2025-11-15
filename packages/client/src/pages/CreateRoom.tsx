@@ -13,6 +13,7 @@ const CreateRoomPage: React.FC = () => {
   const [yearMin, setYearMin] = useState<string>('');
   const [yearMax, setYearMax] = useState<string>('');
   const [contentRating, setContentRating] = useState<string>('');
+  const [showAllGenres, setShowAllGenres] = useState(false); // New state for showing all genres
 
   // Fetch genres based on selected libraries
   const { data: genres, isLoading: isLoadingGenres, isError: isErrorGenres, error: errorGenres } = usePlexGenres({
@@ -62,6 +63,9 @@ const CreateRoomPage: React.FC = () => {
     navigate(`/room/${placeholderRoomId}`);
   };
 
+  const displayedGenres = genres; // Always render all genres
+  const genreContainerMaxHeight = showAllGenres ? 'none' : '150px'; // Dynamic maxHeight
+
   if (isLoadingLibraries) {
     return <div>Loading libraries...</div>;
   }
@@ -88,25 +92,36 @@ const CreateRoomPage: React.FC = () => {
       ))}
 
       <h2>Filters</h2>
-      {selectedLibraries.length > 0 && ( // Only show genres if libraries are selected
-        <div>
-          <h3>Genres</h3>
-          {isLoadingGenres && <div>Loading genres...</div>}
-          {isErrorGenres && <div>Error loading genres: {errorGenres?.message}</div>}
-          {genres?.map((genreName) => (
-            <div key={genreName}>
-              <input
-                type="checkbox"
-                id={`genre-${genreName}`}
-                value={genreName}
-                checked={selectedGenres.includes(genreName)}
-                onChange={handleGenreChange}
-              />
-              <label htmlFor={`genre-${genreName}`}>{genreName}</label>
+      <div>
+        <h3>Genres</h3>
+        {selectedLibraries.length === 0 ? (
+          <p>Select libraries to see available genres.</p>
+        ) : (
+          <>
+            {isLoadingGenres && <div>Loading genres...</div>}
+            {isErrorGenres && <div>Error loading genres: {errorGenres?.message}</div>}
+            <div style={{ maxHeight: genreContainerMaxHeight, overflowY: 'auto', border: '1px solid #ccc', padding: '5px' }}> {/* Dynamic maxHeight */}
+              {displayedGenres?.map((genreName) => ( // Always map all genres
+                <div key={genreName} style={{ marginBottom: '5px' }}>
+                  <input
+                    type="checkbox"
+                    id={`genre-${genreName}`}
+                    value={genreName}
+                    checked={selectedGenres.includes(genreName)}
+                    onChange={handleGenreChange}
+                  />
+                  <label htmlFor={`genre-${genreName}`}>{genreName}</label>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+            {genres && genres.length > 0 && ( // Only show button if there are genres
+              <button onClick={() => setShowAllGenres(!showAllGenres)} style={{ marginTop: '10px' }}>
+                {showAllGenres ? 'Show Less' : 'Show More'}
+              </button>
+            )}
+          </>
+        )}
+      </div>
 
       <div>
         <label htmlFor="yearMin">Year Min:</label>

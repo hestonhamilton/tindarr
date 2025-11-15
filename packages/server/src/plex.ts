@@ -167,7 +167,6 @@ export async function getGenres(
   for (const libraryKey of libraryKeys) {
     try {
       const requestUrl = `${plexUrl}/library/sections/${libraryKey}/genre`;
-      console.log(`Fetching genres from Plex: ${requestUrl}`); // Added log
       const response = await axios.get<PlexGenreResponse>(requestUrl, {
         headers: {
           'X-Plex-Token': plexToken,
@@ -175,14 +174,12 @@ export async function getGenres(
         },
       });
 
-      console.log(`Plex genres response for library ${libraryKey}:`, JSON.stringify(response.data)); // Added log
-
-      if (response.data && response.data.MediaContainer && response.data.MediaContainer.Directory) { // Corrected to Directory
-        response.data.MediaContainer.Directory.forEach(genre => { // Corrected to Directory
-          allGenres.add(genre.title); // Extract 'title' for the genre tag
+      if (response.data && response.data.MediaContainer && response.data.MediaContainer.Directory) {
+        response.data.MediaContainer.Directory.forEach(genre => {
+          allGenres.add(genre.title);
         });
       } else {
-        console.warn(`No genres found in Plex response for library ${libraryKey}.`); // Added log
+        // No genres found, continue without warning
       }
     } catch (error: any) {
       console.error(`Failed to get genres for library ${libraryKey}:`, error.message);
