@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import axios from 'axios';
 import { RoomManager } from '../room';
-import { getMovies, getPlayers, getServerId, playOnPlayer } from '../plex';
+import { getLibraries, getMovies, getPlayers, getServerId, playOnPlayer } from '../plex';
 import { Movie } from '../types';
+import { HALLOWEEN_TITLES } from '../halloween';
+import { buildCuratedDeck } from '../curatedDeck';
 
 // Room-scoped Plex access using the host's credentials, so guests who joined by
 // link/QR (no Plex login) get the same deck and posters without ever seeing the token.
@@ -15,12 +17,34 @@ export function createRoomsRouter(roomManager: RoomManager) {
     return room && session ? { room, session } : undefined;
   };
 
+  router.post('/curated/halloween', (req, res) => {
+    const { plexUrl, plexToken } = req.body ?? {};
+    if (typeof plexUrl !== 'string' || !plexUrl.trim() ||
+        typeof plexToken !== 'string' || !plexToken.trim()) {
+      return res.status(400).json({ error: 'Plex URL and token are required.' });
+    }
+    try {
+      const room = roomManager.createCuratedLobby(process.env.CURATED_ROOM_CODE || 'BOO', plexUrl, plexToken);
+      res.json({ code: room.code });
+    } catch {
+      res.status(409).json({ error: 'Room code already in use.' });
+    }
+  });
+
   router.get('/:code/movies', async (req, res) => {
     const found = lookup(req.params.code);
     if (!found) return res.status(404).json({ error: 'Room not found.' });
     const { room, session } = found;
 
     session.deck ??= (async () => {
+      if (room.curated === 'halloween') {
+        const libraries = await getLibraries(session.plexUrl, session.plexToken);
+        const movies: Movie[] = [];
+        for (const lib of libraries.filter(lib => lib.type === 'movie')) {
+          movies.push(...await getMovies(session.plexUrl, session.plexToken, lib.key, 'movie'));
+        }
+        return buildCuratedDeck(HALLOWEEN_TITLES, movies);
+      }
       const deck: Movie[] = [];
       for (const lib of room.selectedLibraries) {
         deck.push(...await getMovies(

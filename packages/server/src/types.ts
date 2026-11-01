@@ -6,6 +6,7 @@ export interface User {
 export interface Room {
   id: string;
   code: string;
+  curated?: 'halloween';
   users: User[];
   // New fields for movie selection criteria
   selectedLibraries: SelectedLibrary[];

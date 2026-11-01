@@ -54,6 +54,22 @@ describe('RoomManager', () => {
   });
 
   describe('leaveRoom', () => {
+    it('keeps a curated lobby and replaces its Plex session on refresh', () => {
+      const room = roomManager.createCuratedLobby('BOO', 'http://plex', 'first');
+      const session = roomManager.getPlexSession(room.id)!;
+      session.deck = Promise.resolve([]);
+      roomManager.joinRoom('BOO', { id: 'guest', name: 'Guest' });
+      roomManager.leaveRoom(room.id, 'guest');
+
+      expect(roomManager.getRoomByCode('BOO')).toBe(room);
+      expect(room.users).toEqual([]);
+      expect(room).not.toHaveProperty('plexToken');
+      roomManager.createCuratedLobby('BOO', 'http://plex', 'first');
+      expect(roomManager.getPlexSession(room.id)).toBe(session); // same creds keep the shuffled deck
+      expect(roomManager.createCuratedLobby('BOO', 'http://new-plex', 'second')).toBe(room);
+      expect(roomManager.getPlexSession(room.id)).toEqual({ plexUrl: 'http://new-plex', plexToken: 'second' });
+    });
+
     it('should remove a user from an existing room', () => {
       const user1: User = { id: '1', name: 'test1' };
       const user2: User = { id: '2', name: 'test2' };

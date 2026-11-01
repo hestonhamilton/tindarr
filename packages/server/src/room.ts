@@ -39,6 +39,38 @@ export class RoomManager {
     return room;
   }
 
+  createCuratedLobby(code: string, plexUrl: string, plexToken: string): Room {
+    const roomCode = code.toUpperCase();
+    const existing = this.getRoomByCode(roomCode);
+    if (existing) {
+      if (existing.curated !== 'halloween') throw new Error('Room code already in use.');
+      // Re-opening with the same creds keeps the deck, so nobody's swipe order reshuffles
+      // mid-night; new creds replace the session so an in-flight fetch can't restore the old deck.
+      const session = this.plexSessions.get(existing.id);
+      if (session?.plexUrl !== plexUrl || session.plexToken !== plexToken) {
+        this.plexSessions.set(existing.id, { plexUrl, plexToken });
+      }
+      return existing;
+    }
+
+    const room: Room = {
+      id: crypto.randomUUID(),
+      code: roomCode,
+      curated: 'halloween',
+      users: [],
+      selectedLibraries: [],
+      selectedGenres: [],
+      selectedContentRatings: [],
+      sortOrder: 'random',
+      likedMovies: [],
+      movieLikes: {},
+    };
+    this.rooms.set(room.id, room);
+    this.roomCodes.set(roomCode, room.id);
+    this.plexSessions.set(room.id, { plexUrl, plexToken });
+    return room;
+  }
+
   joinRoom(roomCode: string, user: User): Room | null { // Accepts roomCode
     const room = this.getRoomByCode(roomCode); // Find by code
     if (room) {
@@ -57,7 +89,7 @@ export class RoomManager {
       const userIndex = room.users.findIndex((user) => user.id === userId);
       if (userIndex > -1) {
         room.users.splice(userIndex, 1);
-        if (room.users.length === 0) {
+        if (room.users.length === 0 && !room.curated) {
           this.rooms.delete(roomId);
           // Remove code mapping when room is deleted
           this.roomCodes.delete(room.code);

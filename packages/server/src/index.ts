@@ -15,6 +15,9 @@ const port = process.env.PORT || 3001;
 app.use(cors()); // Use cors middleware
 
 const roomManager = new RoomManager();
+if (process.env.PLEX_URL && process.env.PLEX_TOKEN) {
+  roomManager.createCuratedLobby(process.env.CURATED_ROOM_CODE || 'BOO', process.env.PLEX_URL, process.env.PLEX_TOKEN);
+}
 createSocketServer(server, roomManager);
 
 app.use('/api/auth', authRouter);
