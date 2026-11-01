@@ -43,7 +43,7 @@ const MatchOverlay: React.FC<MatchOverlayProps> = ({ roomCode, movie, onClose })
   };
 
   return (
-    <div className='overlay match'>
+    <div className='overlay match' data-testid='match-overlay'>
       <div className='confetti' aria-hidden>
         {Array.from({ length: 40 }, (_, i) => (
           <span key={i} style={{
@@ -60,10 +60,10 @@ const MatchOverlay: React.FC<MatchOverlayProps> = ({ roomCode, movie, onClose })
       <div className='actions'>
         {players === null && <p>Looking for TVs…</p>}
         {players?.map((player) => (
-          <button key={player.id} className='play' onClick={() => play(player)}>▶ Play on {player.name}</button>
+          <button key={player.id} className='play' aria-label={`Play on ${player.name}`} onClick={() => play(player)}>▶ Play on {player.name}</button>
         ))}
         {players?.length === 0 && (
-          <p>No TVs ready for remote play. Open Plex on the TV, then <button onClick={loadPlayers}>look again</button></p>
+          <p>No TVs ready for remote play. Open Plex on the TV, then <button aria-label='Look for TVs again' onClick={loadPlayers}>look again</button></p>
         )}
       </div>
       {/* Catch-all for any device not listed above: Plex's own cast/player picker takes over */}
@@ -78,7 +78,7 @@ const MatchOverlay: React.FC<MatchOverlayProps> = ({ roomCode, movie, onClose })
         </a>
       )}
       {status && <p>{status}</p>}
-      <button onClick={onClose}>Keep swiping</button>
+      <button aria-label='Keep swiping' onClick={onClose}>Keep swiping</button>
     </div>
   );
 };

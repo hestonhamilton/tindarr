@@ -20,16 +20,16 @@ const InviteModal: React.FC<InviteModalProps> = ({ roomCode, onClose }) => {
       <div className='invite' onClick={(e) => e.stopPropagation()}>
         <h2>Scan to join</h2>
         <div className='qr'>
-          <QRCodeSVG value={link} size={240} marginSize={2} />
+          <QRCodeSVG value={link} size={320} marginSize={2} />
         </div>
         <p className='roomCode'>{roomCode}</p>
-        <p style={{ wordBreak: 'break-all', opacity: 0.8 }}>{link}</p>
+        <p className='inviteUrl'>{link}</p>
         <div className='actions'>
           {navigator.share && (
-            <button onClick={() => navigator.share({ title: 'Join my Tindarr room', url: link })}>Share</button>
+            <button aria-label='Share invite' onClick={() => navigator.share({ title: 'Join my Tindarr room', url: link })}>Share</button>
           )}
-          {navigator.clipboard && <button onClick={copy}>{copied ? 'Copied!' : 'Copy link'}</button>}
-          <button onClick={onClose}>Done</button>
+          {navigator.clipboard && <button aria-label='Copy invite link' onClick={copy}>{copied ? 'Copied!' : 'Copy link'}</button>}
+          <button aria-label='Close invite' onClick={onClose}>Done</button>
         </div>
       </div>
     </div>

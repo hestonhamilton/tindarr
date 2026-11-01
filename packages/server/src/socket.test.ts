@@ -170,9 +170,9 @@ describe('Socket.IO server', () => {
     };
 
     clientSocket.once('userJoined', () => {
-      second.once('connect', () => second.emit('joinRoom', { roomCode: room.code, user: guest }));
+      second.emit('joinRoom', { roomCode: room.code, user: guest }); // buffered until connected
       clientSocket.once('userJoined', () => {
-        third.once('connect', () => third.emit('joinRoom', { roomCode: room.code, user: guest }));
+        third.emit('joinRoom', { roomCode: room.code, user: guest }); // buffered until connected
         clientSocket.once('userJoined', () => {
           second.disconnect();
           setTimeout(() => {
