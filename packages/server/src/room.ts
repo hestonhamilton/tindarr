@@ -1,9 +1,16 @@
 import { Room, User, CreateRoomPayload, Movie } from './types'; // Import Movie
+
+export interface PlexSession {
+  plexUrl: string;
+  plexToken: string;
+  deck?: Promise<Movie[]>; // Fetched once so everyone swipes the same order
+}
 import crypto from 'crypto'; // Import crypto module
 
 export class RoomManager {
   private rooms: Map<string, Room> = new Map(); // Map by roomId (UUID)
   private roomCodes: Map<string, string> = new Map(); // Map roomCode to roomId
+  private plexSessions: Map<string, PlexSession> = new Map(); // roomId -> host's Plex creds
 
   createRoom(payload: CreateRoomPayload): Room { // Changed parameter to payload
     const roomId = crypto.randomUUID(); // Use UUID for internal ID
@@ -26,6 +33,9 @@ export class RoomManager {
     };
     this.rooms.set(roomId, room);
     this.roomCodes.set(roomCode, roomId); // Store mapping
+    if (payload.plexUrl && payload.plexToken) {
+      this.plexSessions.set(roomId, { plexUrl: payload.plexUrl, plexToken: payload.plexToken });
+    }
     return room;
   }
 
@@ -51,6 +61,7 @@ export class RoomManager {
           this.rooms.delete(roomId);
           // Remove code mapping when room is deleted
           this.roomCodes.delete(room.code);
+          this.plexSessions.delete(roomId);
         }
         return room;
       }
@@ -62,8 +73,12 @@ export class RoomManager {
     return this.rooms.get(roomId);
   }
 
+  getPlexSession(roomId: string): PlexSession | undefined {
+    return this.plexSessions.get(roomId);
+  }
+
   getRoomByCode(code: string): Room | undefined {
-    const roomId = this.roomCodes.get(code);
+    const roomId = this.roomCodes.get(code.toUpperCase());
     if (roomId) {
       return this.rooms.get(roomId);
     }

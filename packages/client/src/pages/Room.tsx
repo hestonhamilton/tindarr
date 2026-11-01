@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { usePlexMovies } from '../hooks/usePlexMovies';
+import { useQuery } from '@tanstack/react-query';
+import { v4 as uuidv4 } from 'uuid';
 import { useSocket } from '../hooks/useSocket';
 import { Movie, ClientToServerEvents, ServerToClientEvents, Room } from '../types'; // Removed SelectedLibrary
 import { Socket } from 'socket.io-client';
 import TinderCard from 'react-tinder-card'; // Imported TinderCard
 import MovieDetailsModal from '../components/MovieDetailsModal'; // Import MovieDetailsModal
 import axios from 'axios'; // Import axios
+import InviteModal from '../components/InviteModal';
+import MatchOverlay from '../components/MatchOverlay';
+import { posterSrc } from '../api';
+
+// TinderCard re-attaches its touch listeners whenever these props change identity, which
+// resets the in-progress drag; keep them stable across re-renders (see swipe handlers below).
+const PREVENT_SWIPE = ['up', 'down'];
 
 const RoomPage: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>(); // Changed to roomCode
@@ -21,8 +29,15 @@ const RoomPage: React.FC = () => {
   const plexToken = localStorage.getItem('plexToken') || '';
   const [plexServerId, setPlexServerId] = useState<string | null>(null); // State for Plex server ID
 
-  const userId = localStorage.getItem('userId') || ''; // Retrieve userId
-  const userName = localStorage.getItem('userName') || ''; // Retrieve userName
+  // Guests arriving from an invite link/QR have no identity yet; the name gate below sets it
+  const [userId, setUserId] = useState(localStorage.getItem('userId') || '');
+  const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
+  const [nameInput, setNameInput] = useState('');
+
+  const [roomNotFound, setRoomNotFound] = useState(false);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [match, setMatch] = useState<Movie | null>(null);
+  const [pendingSwipe, setPendingSwipe] = useState<string | null>(null); // direction a release would commit
 
   // State for TinderCard
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -36,34 +51,43 @@ const RoomPage: React.FC = () => {
     } else if (direction === 'left') {
       handleDislike(currentMovie);
     }
+    setPendingSwipe(null);
     setCurrentIndex((prevIndex) => prevIndex + 1); // Move to next movie after swipe
   };
 
-  // Function to handle card leaving screen
-  const outOfFrame = () => { // Removed movieKey
-    // console.log(movieKey + ' left the screen!'); // Removed log
-  };
+  // Stable wrappers so a re-render mid-drag (a like, someone joining, the LIKE stamp)
+  // doesn't make TinderCard drop the gesture and snap the card back
+  const swipedRef = useRef(swiped);
+  swipedRef.current = swiped;
+  const onCardSwipe = useCallback((dir: string) => swipedRef.current(dir), []);
+  const onRequirementFulfilled = useCallback((dir: string) => setPendingSwipe(dir), []);
+  const onRequirementUnfulfilled = useCallback(() => setPendingSwipe(null), []);
 
   const handleMovieClick = (movie: Movie) => {
     setSelectedMovie(movie);
     setIsModalOpen(true);
   };
 
-  const { data: movies, isLoading, isError, error } = usePlexMovies({
-    plexUrl,
-    plexToken,
-    selectedLibraries: roomState?.selectedLibraries || [], // Use from roomState
-    genre: roomState?.selectedGenres.join(',') || undefined, // Use from roomState
-    yearMin: roomState?.yearMin, // Use from roomState
-    yearMax: roomState?.yearMax, // Use from roomState
-    contentRating: roomState?.selectedContentRatings.join(',') || undefined, // Use from roomState
-    durationMin: roomState?.durationMin, // Use from roomState
-    durationMax: roomState?.durationMax, // Use from roomState
-    sortOrder: roomState?.sortOrder, // Use from roomState
-  }); // Corrected: removed the second argument
+  // One deck per room, loaded server-side with the host's Plex session, so everyone
+  // (including guests without Plex) swipes the same movies in the same order
+  const { data: movies, isLoading, isError, error } = useQuery<Movie[], Error>({
+    queryKey: ['roomDeck', roomCode],
+    queryFn: async () => (await axios.get<Movie[]>(`/api/rooms/${roomCode}/movies`)).data,
+    enabled: !!roomState,
+    staleTime: Infinity,
+  });
+
+  const joinAs = (e: React.FormEvent) => {
+    e.preventDefault();
+    const id = uuidv4();
+    localStorage.setItem('userId', id);
+    localStorage.setItem('userName', nameInput.trim());
+    setUserId(id);
+    setUserName(nameInput.trim());
+  };
 
   useEffect(() => {
-    if (socket && roomCode) {
+    if (socket && roomCode && userId) {
       socket.emit('joinRoom', { roomCode: roomCode || '', user: { id: userId, name: userName } });
 
       socket.on('roomCreated', (room: Room) => {
@@ -90,6 +114,10 @@ const RoomPage: React.FC = () => {
       socket.on('roomUpdated', (room: Room) => { // New event listener
         setRoomState(room);
       });
+
+      socket.on('roomNotFound', () => setRoomNotFound(true));
+
+      socket.on('match', (movie: Movie) => setMatch(movie));
     }
 
     return () => {
@@ -101,6 +129,8 @@ const RoomPage: React.FC = () => {
         socket.off('movieLiked');
         socket.off('movieDisliked');
         socket.off('roomUpdated'); // Clean up new event listener
+        socket.off('roomNotFound');
+        socket.off('match');
       }
     };
   }, [socket, roomCode, userId, userName]);
@@ -157,6 +187,25 @@ const RoomPage: React.FC = () => {
     setCurrentIndex((prevIndex) => prevIndex + 1); // Move to next movie after swipe
   };
 
+  if (!userId || !userName) {
+    return (
+      <form onSubmit={joinAs}>
+        <h1>Join room {roomCode}</h1>
+        <input
+          autoFocus
+          value={nameInput}
+          onChange={(e) => setNameInput(e.target.value)}
+          placeholder='Your name'
+        />
+        <button type='submit' disabled={!nameInput.trim()} style={{ marginLeft: '10px' }}>Start swiping</button>
+      </form>
+    );
+  }
+
+  if (roomNotFound) {
+    return <div>Room {roomCode} doesn't exist anymore. Ask for a new invite.</div>;
+  }
+
   if (isLoading || !roomState) { // Added check for roomState
     return <div>Loading movies...</div>;
   }
@@ -187,68 +236,66 @@ const RoomPage: React.FC = () => {
   };
 
   return (
-    <div>
-      <h1>Movie Room: {roomCode}</h1>
-      <div className='cardContainer' style={{ margin: '20px auto' }}>
+    <div className='room'>
+      <header className='roomHeader'>
+        <span className='roomChip'>Room {roomState.code}</span>
+        <span className='people'>{roomState.users.map((user) => user.name).join(', ')}</span>
+        <button onClick={() => setIsInviteOpen(true)}>Invite</button>
+      </header>
+
+      <div className='cardContainer'>
         {currentMovie && ( // Only render TinderCard if currentMovie exists
           <TinderCard
             className='swipe'
             key={currentMovie.key}
-            onSwipe={(dir: string) => swiped(dir)} // Pass dir directly
-            onCardLeftScreen={() => outOfFrame()} // No movieKey needed
-            preventSwipe={['up', 'down']}
+            onSwipe={onCardSwipe}
+            preventSwipe={PREVENT_SWIPE}
+            // Distance, not release velocity: the default reads only the last touchmove's
+            // speed, so a hard swipe that slows as the finger lifts snapped back unregistered
+            swipeRequirementType='position'
+            swipeThreshold={100}
+            onSwipeRequirementFulfilled={onRequirementFulfilled}
+            onSwipeRequirementUnfulfilled={onRequirementUnfulfilled}
           >
-            <div className='card' style={{
-              backgroundImage: `url(${plexUrl}${currentMovie.posterUrl}?X-Plex-Token=${plexToken})`,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
-              color: '#fff',
-              textShadow: '2px 2px 4px rgba(0,0,0,0.7)'
-            }}></div>
+            <div className='card' style={{ backgroundImage: `url(${posterSrc(roomCode || '', currentMovie.posterUrl)})` }}>
+              {pendingSwipe === 'right' && <span className='stamp like'>LIKE</span>}
+              {pendingSwipe === 'left' && <span className='stamp nope'>NOPE</span>}
+            </div>
           </TinderCard>
         )}
       </div>
 
-      {/* Buttons to trigger swipe */}
-      <div style={{ textAlign: 'center', marginTop: '20px' }}>
-        <button onClick={() => swipe('left')} style={{ marginRight: '10px', padding: '10px 20px', backgroundColor: 'red', color: 'white', border: 'none', borderRadius: '5px' }}>Dislike</button>
-        <button onClick={() => swipe('right')} style={{ padding: '10px 20px', backgroundColor: 'green', color: 'white', border: 'none', borderRadius: '5px' }}>Like</button>
+      <div className='swipeButtons'>
+        <button className='nope' aria-label='Dislike' onClick={() => swipe('left')}>✕</button>
+        <button className='like' aria-label='Like' onClick={() => swipe('right')}>♥</button>
       </div>
 
-      {/* Duplicated Movie Details Section (for testing separation) */}
-      {currentMovie && (
-        <div style={{ textAlign: 'center', maxWidth: '600px', padding: '20px', border: '1px dashed gray', marginTop: '20px' }}>
-          <h2>{currentMovie.title} ({currentMovie.year})</h2>
-          {currentMovie.tagline && <p><i>"{currentMovie.tagline}"</i></p>}
-          <p>{currentMovie.summary}</p>
-          {currentMovie.duration !== undefined && <p>Duration: {formatDuration(currentMovie.duration)}</p>}
-          {currentMovie.rating !== undefined && <p>Critic Score: {currentMovie.rating} (IMDb Icon Placeholder)</p>}
-          {currentMovie.audienceRating !== undefined && <p>Audience Score: {currentMovie.audienceRating} (Rotten Tomatoes Icon Placeholder)</p>}
-        </div>
-      )}
+      {/* Tap for the full details modal; kept short so card + buttons stay on one screen */}
+      <div className='movieInfo' onClick={() => handleMovieClick(currentMovie)}>
+        <h2>{currentMovie.title}{currentMovie.year ? <span className='year'> ({currentMovie.year})</span> : null}</h2>
+        <p className='meta'>
+          {[
+            currentMovie.duration !== undefined && formatDuration(currentMovie.duration),
+            currentMovie.contentRating,
+            currentMovie.rating !== undefined && `Critics ${currentMovie.rating}`,
+            currentMovie.audienceRating !== undefined && `Audience ${currentMovie.audienceRating}`,
+          ].filter(Boolean).join(' · ')}
+        </p>
+        {currentMovie.summary && <p className='summary'>{currentMovie.summary}</p>}
+      </div>
 
-      {roomState?.likedMovies && roomState.likedMovies.length > 0 && (
-        <div style={{ margin: '20px', border: '1px solid lightgray', padding: '10px' }}>
-          <h3>Liked Movies</h3>
-          <div style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px' }}>
+      {roomState.likedMovies.length > 0 && (
+        <section className='matches'>
+          <h3>Matches ({roomState.likedMovies.length})</h3>
+          <div className='matchStrip'>
             {roomState.likedMovies.map((movie) => (
-              <div
-                key={movie.key}
-                style={{ flexShrink: 0, textAlign: 'center', width: '100px', cursor: 'pointer' }}
-                onClick={() => handleMovieClick(movie)}
-              >
-                <img
-                  src={`${plexUrl}${movie.posterUrl}?X-Plex-Token=${plexToken}`}
-                  alt={movie.title}
-                  style={{ width: '100px', height: '150px', objectFit: 'cover' }}
-                />
-                <p style={{ fontSize: '0.8em', margin: '5px 0 0 0' }}>{movie.title}</p>
-              </div>
+              <button key={movie.key} className='matchItem' onClick={() => handleMovieClick(movie)}>
+                <img src={posterSrc(roomCode || '', movie.posterUrl)} alt='' loading='lazy' />
+                <span>{movie.title}</span>
+              </button>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {isModalOpen && selectedMovie && (
@@ -258,8 +305,13 @@ const RoomPage: React.FC = () => {
           plexUrl={plexUrl}
           plexToken={plexToken}
           plexServerId={plexServerId} // Pass plexServerId to modal
+          posterSrc={posterSrc(roomCode || '', selectedMovie.posterUrl)}
         />
       )}
+
+      {isInviteOpen && <InviteModal roomCode={roomState.code} onClose={() => setIsInviteOpen(false)} />}
+
+      {match && <MatchOverlay roomCode={roomState.code} movie={match} onClose={() => setMatch(null)} />}
     </div>
   );
 };

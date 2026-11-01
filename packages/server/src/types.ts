@@ -31,6 +31,10 @@ export interface CreateRoomPayload {
   durationMax?: number;
   selectedContentRatings: string[];
   sortOrder: string;
+  // Host's Plex connection. Kept server-side so guests without a Plex login can
+  // swipe; never echoed back in Room.
+  plexUrl?: string;
+  plexToken?: string;
 }
 
 export interface JoinRoomPayload {
@@ -49,6 +53,7 @@ export interface ServerToClientEvents {
   userLeft: (room: Room) => void;
   roomNotFound: () => void;
   roomUpdated: (room: Room) => void; // Added
+  match: (movie: Movie) => void; // Everyone in the room liked this movie
 }
 
 export interface ClientToServerEvents {
@@ -75,6 +80,13 @@ export interface Movie {
   contentRating?: string; // Already added, but ensuring it's here
   rating?: number; // Already added, but ensuring it's here
   originallyAvailableAt?: string; // Already added, but ensuring it's here
+  audienceRating?: number;
+}
+
+export interface Player {
+  id: string; // Plex client machineIdentifier
+  name: string;
+  product: string;
 }
 
 export interface SelectedLibrary {

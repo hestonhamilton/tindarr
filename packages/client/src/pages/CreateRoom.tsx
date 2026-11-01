@@ -182,6 +182,9 @@ const CreateRoomPage: React.FC = () => {
         durationMax: durationMax ? parseInt(durationMax, 10) * 60 * 1000 : undefined, // Convert minutes to milliseconds
         selectedContentRatings: selectedContentRatings,
         sortOrder: sortOrder,
+        // Lets the server load the deck and posters for guests without a Plex login
+        plexUrl: localStorage.getItem('plexUrl') || undefined,
+        plexToken: localStorage.getItem('plexToken') || undefined,
       });
     } else {
       alert('Please enter your name to create a room.');

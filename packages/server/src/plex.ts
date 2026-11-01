@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
 
-import { Movie } from './types';
+import { Movie, Player } from './types';
 
 const PLEX_API_BASE_URL = 'https://plex.tv/api/v2';
 
@@ -475,4 +475,94 @@ export async function getMoviesCount(
   }
 
   return 0;
+}
+
+// Remote-controllable Plex players, from two sources (same approach as python-plexapi /
+// Home Assistant): the server's own client list, and plex.tv's registry of devices that
+// advertise as players. The second matters here because the server runs on a Docker
+// bridge and never hears the players' LAN (GDM) broadcasts.
+interface PlayerRoute extends Player {
+  uris: string[]; // direct player endpoints; empty = relay through the server
+}
+
+const PLEX_HEADERS = { 'X-Plex-Client-Identifier': 'tindarr', 'X-Plex-Product': 'Tindarr', 'X-Plex-Device-Name': 'Tindarr', Accept: 'application/json' };
+
+async function getPlayerRoutes(plexUrl: string, plexToken: string): Promise<PlayerRoute[]> {
+  const headers = { ...PLEX_HEADERS, 'X-Plex-Token': plexToken };
+  const [local, registry] = await Promise.allSettled([
+    axios.get<{ MediaContainer: { Server?: { name: string; product: string; machineIdentifier: string; protocolCapabilities?: string }[] } }>(
+      `${plexUrl}/clients`, { headers, timeout: 5000 }),
+    axios.get<{ name: string; product: string; clientIdentifier: string; provides: string; presence: boolean; connections?: { uri: string; local: boolean }[] }[]>(
+      `${PLEX_API_BASE_URL}/resources`, { headers, params: { includeHttps: 1 }, timeout: 5000 }),
+  ]);
+
+  const routes = new Map<string, PlayerRoute>();
+  if (local.status === 'fulfilled') {
+    for (const c of local.value.data.MediaContainer.Server ?? []) {
+      if (c.protocolCapabilities?.split(',').includes('playback')) {
+        routes.set(c.machineIdentifier, { id: c.machineIdentifier, name: c.name, product: c.product, uris: [] });
+      }
+    }
+  }
+  if (registry.status === 'fulfilled') {
+    for (const d of registry.value.data) {
+      if (!d.presence || !d.provides.split(',').includes('player') || routes.has(d.clientIdentifier)) continue;
+      const uris = [...(d.connections ?? [])].sort((a, b) => Number(b.local) - Number(a.local)).map((c) => c.uri);
+      routes.set(d.clientIdentifier, { id: d.clientIdentifier, name: d.name, product: d.product, uris });
+    }
+  }
+  return [...routes.values()];
+}
+
+export async function getPlayers(plexUrl: string, plexToken: string): Promise<Player[]> {
+  return (await getPlayerRoutes(plexUrl, plexToken)).map(({ id, name, product }) => ({ id, name, product }));
+}
+
+export async function getServerId(plexUrl: string, plexToken: string): Promise<string> {
+  const identity = await axios.get<{ MediaContainer: { machineIdentifier: string } }>(`${plexUrl}/identity`, {
+    headers: { ...PLEX_HEADERS, 'X-Plex-Token': plexToken },
+  });
+  return identity.data.MediaContainer.machineIdentifier;
+}
+
+// Start a movie on a player: build a play queue on the server, then send playMedia to the
+// player directly (registry players) or relayed by the server (players it discovered).
+export async function playOnPlayer(plexUrl: string, plexToken: string, ratingKey: string, playerId: string): Promise<void> {
+  const headers = { ...PLEX_HEADERS, 'X-Plex-Token': plexToken };
+  const player = (await getPlayerRoutes(plexUrl, plexToken)).find((p) => p.id === playerId);
+  if (!player) throw new Error(`player ${playerId} is not available`);
+
+  const serverId = await getServerId(plexUrl, plexToken);
+  const key = `/library/metadata/${ratingKey}`;
+  const queue = await axios.post<{ MediaContainer: { playQueueID: number } }>(`${plexUrl}/playQueues`, null, {
+    headers,
+    params: { type: 'video', uri: `server://${serverId}/com.plexapp.plugins.library${key}`, shuffle: 0, repeat: 0, continuous: 0 },
+  });
+
+  const url = new URL(plexUrl);
+  const params = {
+    key,
+    offset: 0,
+    type: 'video',
+    machineIdentifier: serverId,
+    address: url.hostname,
+    port: url.port || (url.protocol === 'https:' ? '443' : '80'),
+    protocol: url.protocol.replace(':', ''),
+    token: plexToken, // lets the player fetch the media from the server
+    containerKey: `/playQueues/${queue.data.MediaContainer.playQueueID}?window=100&own=1`,
+    commandID: Date.now() % 100000,
+  };
+  const commandHeaders = { ...headers, 'X-Plex-Target-Client-Identifier': playerId };
+
+  const targets = player.uris.length ? player.uris : [plexUrl];
+  let lastError: unknown;
+  for (const base of targets) {
+    try {
+      await axios.get(`${base}/player/playback/playMedia`, { headers: commandHeaders, params, timeout: 8000 });
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
 }

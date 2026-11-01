@@ -21,6 +21,10 @@ COPY packages/client/tsconfig.app.json .
 COPY packages/client/tsconfig.node.json .
 COPY packages/client/vite.config.ts .
 COPY packages/client/eslint.config.js .
+# Baked into the bundle at build time (public — never pass a token here)
+ARG VITE_BACKEND_URL
+ARG VITE_PLEX_URL
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL VITE_PLEX_URL=$VITE_PLEX_URL
 RUN npm run build
 
 # Stage 2: Build the server
@@ -50,7 +54,7 @@ WORKDIR /app
 
 # Copy server build artifacts
 COPY --from=server-builder /app/packages/server/dist ./packages/server/dist
-COPY --from=server-builder /app/packages/server/node_modules ./packages/server/node_modules
+COPY --from=server-builder /app/node_modules ./node_modules
 COPY packages/server/package.json ./packages/server/package.json
 
 # Copy client build artifacts

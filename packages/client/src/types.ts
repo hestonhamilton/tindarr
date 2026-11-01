@@ -58,6 +58,8 @@ export interface ClientToServerEvents {
     durationMax?: number;
     selectedContentRatings: string[];
     sortOrder: string;
+    plexUrl?: string;
+    plexToken?: string;
   }) => void;
   joinRoom: (payload: { roomCode: string; user: User }) => void;
   leaveRoom: (payload: { roomId: string; userId: string }) => void;
@@ -73,6 +75,14 @@ export interface ServerToClientEvents {
   movieLiked: (payload: { userId: string; movieId: string }) => void;
   movieDisliked: (payload: { userId: string; movieId: string }) => void;
   roomUpdated: (room: Room) => void; // Added
+  roomNotFound: () => void;
+  match: (movie: Movie) => void; // Everyone in the room liked this movie
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  product: string;
 }
 
 export interface SelectedLibrary {

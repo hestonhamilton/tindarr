@@ -7,9 +7,10 @@ interface MovieDetailsModalProps {
   plexUrl: string;
   plexToken: string;
   plexServerId?: string | null; // New prop for Plex server ID
+  posterSrc?: string; // Served via the room so guests without a Plex token see it too
 }
 
-const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({ movie, onClose, plexUrl, plexToken, plexServerId }) => {
+const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({ movie, onClose, plexUrl, plexToken, plexServerId, posterSrc }) => {
   const formatDuration = (ms: number | undefined) => {
     if (ms === undefined) return '';
     const minutes = Math.floor(ms / 60000);
@@ -59,9 +60,9 @@ const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({ movie, onClose, p
         {movie.duration !== undefined && <p>Duration: {formatDuration(movie.duration)}</p>}
         {movie.rating !== undefined && <p>Critic Score: {movie.rating} (IMDb Icon Placeholder)</p>}
         {movie.audienceRating !== undefined && <p>Audience Score: {movie.audienceRating} (Rotten Tomatoes Icon Placeholder)</p>}
-        {movie.posterUrl && (
+        {posterSrc && (
           <img
-            src={`${plexUrl}${movie.posterUrl}?X-Plex-Token=${plexToken}`}
+            src={posterSrc}
             alt={movie.title}
             style={{ maxWidth: '100%', height: 'auto', marginTop: '15px', borderRadius: '5px' }}
           />

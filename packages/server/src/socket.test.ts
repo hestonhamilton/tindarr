@@ -112,6 +112,27 @@ describe('Socket.IO server', () => {
     });
   });
 
+  it('should emit match once every user in the room likes the same movie', (done) => {
+    const host: User = { id: 'h', name: 'host' };
+    const guest: User = { id: 'g', name: 'guest' };
+    const movie = { key: '42', title: 'Heat' };
+    clientSocket.emit('createRoom', { ...mockCreateRoomPayload(host), plexUrl: 'http://plex', plexToken: 'secret' });
+    clientSocket.on('roomCreated', (room) => {
+      expect(JSON.stringify(room)).not.toContain('secret'); // host token stays server-side
+      const client2 = Client(`http://localhost:${port}`) as ClientSocket<ServerToClientEvents, ClientToServerEvents>;
+      client2.on('connect', () => client2.emit('joinRoom', { roomCode: room.code, user: guest }));
+      client2.on('userJoined', () => {
+        clientSocket.emit('likeMovie', { roomId: room.code, userId: host.id, movie });
+        client2.emit('likeMovie', { roomId: room.code, userId: guest.id, movie });
+      });
+      client2.on('match', (matched) => {
+        expect(matched.key).toBe('42');
+        client2.disconnect();
+        done();
+      });
+    });
+  });
+
   it('should emit roomNotFound if room does not exist', (done) => {
     const user: User = { id: '1', name: 'test' };
     clientSocket.emit('joinRoom', { roomCode: 'non-existent-room', user });

@@ -9,14 +9,13 @@ import {
   LeaveRoomPayload,
 } from './types';
 
-export function createSocketServer(server: http.Server) {
+export function createSocketServer(server: http.Server, roomManager: RoomManager = new RoomManager()) {
   const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
     cors: {
       origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173", // Use environment variable for client origin
       methods: ["GET", "POST"]
     }
   });
-  const roomManager = new RoomManager();
 
   io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {
     console.log('a user connected');
@@ -55,9 +54,13 @@ export function createSocketServer(server: http.Server) {
       const room = roomManager.getRoomByCode(roomCode); // Get the room by code
 
       if (room) {
+        const matchesBefore = room.likedMovies.length;
         const updatedRoom = roomManager.addLikedMovie(room.id, payload.movie, userId); // Pass userId
         if (updatedRoom) {
           io.to(updatedRoom.id).emit('roomUpdated', updatedRoom);
+          if (updatedRoom.likedMovies.length > matchesBefore) {
+            io.to(updatedRoom.id).emit('match', payload.movie);
+          }
         } else {
           // Optionally emit an error back to the client
         }
