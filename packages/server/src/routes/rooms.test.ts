@@ -55,3 +55,20 @@ it('builds one shared curated deck from every movie library', async () => {
   expect(getLibraries).toHaveBeenCalledTimes(1);
   expect((getMovies as jest.Mock).mock.calls.map(call => call[2])).toEqual(['1', '3']);
 });
+
+it('does not cache an empty curated deck, so the next load retries', async () => {
+  const rooms = new RoomManager();
+  rooms.createCuratedLobby('BOO', 'http://plex', 'token');
+  const app = express();
+  app.use(createRoomsRouter(rooms));
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  (getLibraries as jest.Mock).mockResolvedValue([{ key: '1', type: 'movie' }]);
+  (getMovies as jest.Mock)
+    .mockResolvedValueOnce([]) // Plex hiccup: getMovies swallows the error and returns []
+    .mockResolvedValueOnce([{ key: 'coco', title: 'Coco', year: 2017 }]);
+
+  expect((await request(app).get('/BOO/movies')).status).toBe(502);
+  const retry = await request(app).get('/BOO/movies');
+  expect(retry.status).toBe(200);
+  expect(retry.body.map((movie: { key: string }) => movie.key)).toEqual(['coco']);
+});

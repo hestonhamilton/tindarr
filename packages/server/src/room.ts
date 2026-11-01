@@ -45,10 +45,12 @@ export class RoomManager {
     const existing = this.getRoomByCode(roomCode);
     if (existing) {
       if (existing.curated !== 'halloween') throw new Error('Room code already in use.');
-      // Re-opening with the same creds keeps the deck, so nobody's swipe order reshuffles
-      // mid-night; new creds replace the session so an in-flight fetch can't restore the old deck.
+      // Once a deck has loaded, people are swiping it: keep that session so nobody's order
+      // reshuffles and no one can swap the lobby's Plex creds mid-night. Before that (or after a
+      // failed load, which clears the deck) new creds replace the session, e.g. a host fixing a
+      // bad boot token by opening the lobby from Create Room.
       const session = this.plexSessions.get(existing.id);
-      if (session?.plexUrl !== plexUrl || session.plexToken !== plexToken) {
+      if (!session?.deck) {
         this.plexSessions.set(existing.id, { plexUrl, plexToken });
       }
       return existing;

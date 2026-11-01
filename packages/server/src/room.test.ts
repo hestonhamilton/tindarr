@@ -70,7 +70,7 @@ describe('RoomManager', () => {
       expect(room).not.toHaveProperty('plexToken');
     });
 
-    it('keeps a curated lobby and replaces its Plex session on refresh', () => {
+    it('keeps a curated lobby, and its Plex session once a deck has loaded', () => {
       const room = roomManager.createCuratedLobby('BOO', 'http://plex', 'first');
       const session = roomManager.getPlexSession(room.id)!;
       session.deck = Promise.resolve([]);
@@ -80,9 +80,11 @@ describe('RoomManager', () => {
       expect(roomManager.getRoomByCode('BOO')).toBe(room);
       expect(room.users).toEqual([]);
       expect(room).not.toHaveProperty('plexToken');
-      roomManager.createCuratedLobby('BOO', 'http://plex', 'first');
-      expect(roomManager.getPlexSession(room.id)).toBe(session); // same creds keep the shuffled deck
       expect(roomManager.createCuratedLobby('BOO', 'http://new-plex', 'second')).toBe(room);
+      expect(roomManager.getPlexSession(room.id)).toBe(session); // a loaded deck keeps its session
+
+      session.deck = undefined; // a failed load clears the deck
+      roomManager.createCuratedLobby('BOO', 'http://new-plex', 'second');
       expect(roomManager.getPlexSession(room.id)).toEqual({ plexUrl: 'http://new-plex', plexToken: 'second' });
     });
 

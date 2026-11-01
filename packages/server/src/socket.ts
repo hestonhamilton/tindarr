@@ -7,11 +7,12 @@ import {
   CreateRoomPayload,
   JoinRoomPayload,
   LeaveRoomPayload,
+  Movie,
 } from './types';
 
 // A locked phone drops its socket for a moment; only treat a user as gone (which can turn
 // the others' likes into a match) if they haven't reconnected within this window.
-const DISCONNECT_GRACE_MS = 90_000;
+const DISCONNECT_GRACE_MS = 5 * 60_000;
 
 export function createSocketServer(
   server: http.Server,
@@ -34,18 +35,32 @@ export function createSocketServer(
     io.to(roomId).emit('roomUpdated', room);
   };
 
+  // A throw inside a socket.io handler takes down the whole process; a malformed payload
+  // from one client must not end everyone's night
+  const guard = <T>(name: string, handler: (payload: T) => void) => (payload: T) => {
+    try {
+      handler(payload);
+    } catch (error) {
+      console.error(`socket ${name}: ${(error as Error).message}`);
+    }
+  };
+  const isUser = (user: unknown): user is { id: string; name: string } =>
+    typeof (user as { id?: unknown })?.id === 'string' && typeof (user as { name?: unknown })?.name === 'string';
+
   io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {
     console.log('a user connected');
 
-    socket.on('createRoom', (payload: CreateRoomPayload) => {
+    socket.on('createRoom', guard('createRoom', (payload: CreateRoomPayload) => {
+      if (!isUser(payload?.user)) return;
       const room = roomManager.createRoom(payload); // Pass the entire payload
       socket.join(room.id);
       socket.data.roomId = room.id;
       socket.data.userId = payload.user.id;
       socket.emit('roomCreated', room);
-    });
+    }));
 
-    socket.on('joinRoom', (payload: JoinRoomPayload) => {
+    socket.on('joinRoom', guard('joinRoom', (payload: JoinRoomPayload) => {
+      if (typeof payload?.roomCode !== 'string' || !isUser(payload.user)) return;
       const room = roomManager.joinRoom(payload.roomCode, payload.user);
       if (room) {
         socket.join(room.id);
@@ -55,9 +70,10 @@ export function createSocketServer(
       } else {
         socket.emit('roomNotFound');
       }
-    });
+    }));
 
-    socket.on('leaveRoom', (payload: LeaveRoomPayload) => {
+    socket.on('leaveRoom', guard('leaveRoom', (payload: LeaveRoomPayload) => {
+      if (typeof payload?.roomId !== 'string' || typeof payload.userId !== 'string') return;
       const room = roomManager.getRoomById(payload.roomId) ?? roomManager.getRoomByCode(payload.roomId);
       if (room) {
         emitDeparture(room.id, payload.userId);
@@ -67,7 +83,7 @@ export function createSocketServer(
           socket.data.userId = undefined;
         }
       }
-    });
+    }));
 
     socket.on('disconnect', () => {
       console.log('user disconnected');
@@ -81,7 +97,8 @@ export function createSocketServer(
       }, disconnectGraceMs).unref();
     });
 
-    socket.on('likeMovie', (payload) => {
+    socket.on('likeMovie', guard('likeMovie', (payload: { roomId: string; userId: string; movie: Movie }) => {
+      if (typeof payload?.roomId !== 'string' || typeof payload.userId !== 'string' || typeof payload.movie?.key !== 'string') return;
       const roomCode = payload.roomId; // The payload.roomId is actually the roomCode
       const userId = payload.userId; // Get userId from payload
       const room = roomManager.getRoomByCode(roomCode); // Get the room by code
@@ -100,7 +117,7 @@ export function createSocketServer(
       } else {
         // Optionally emit an error back to the client
       }
-    });
+    }));
   });
 
   return io;

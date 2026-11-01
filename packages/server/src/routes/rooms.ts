@@ -43,7 +43,10 @@ export function createRoomsRouter(roomManager: RoomManager) {
         for (const lib of libraries.filter(lib => lib.type === 'movie')) {
           movies.push(...await getMovies(session.plexUrl, session.plexToken, lib.key, 'movie'));
         }
-        return buildCuratedDeck(HALLOWEEN_TITLES, movies);
+        const curated = buildCuratedDeck(HALLOWEEN_TITLES, movies);
+        // getMovies swallows Plex errors and returns []; don't cache an empty deck all night
+        if (curated.length === 0) throw new Error('curated deck is empty');
+        return curated;
       }
       const deck: Movie[] = [];
       for (const lib of room.selectedLibraries) {

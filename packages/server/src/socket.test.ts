@@ -193,4 +193,15 @@ describe('Socket.IO server', () => {
     });
     clientSocket.emit('joinRoom', { roomCode: room.code, user: { id: 'observer', name: 'Observer' } });
   });
+
+  it('survives malformed payloads', (done) => {
+    const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const raw = clientSocket as unknown as { emit: (event: string, payload?: unknown) => void };
+    raw.emit('likeMovie', { roomId: 'BOO', userId: 'x' });
+    raw.emit('likeMovie', null);
+    raw.emit('joinRoom', { roomCode: 'BOO' });
+    raw.emit('leaveRoom', { roomId: 42, userId: 'x' });
+    clientSocket.emit('joinRoom', { roomCode: 'non-existent-room', user: { id: '1', name: 'test' } });
+    clientSocket.once('roomNotFound', () => { errors.mockRestore(); done(); }); // still alive and answering
+  });
 });
