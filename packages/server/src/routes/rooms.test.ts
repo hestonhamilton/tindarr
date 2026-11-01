@@ -20,6 +20,21 @@ it('validates curated lobby credentials and returns its fixed code', async () =>
   expect(rooms.getRoomByCode('BOO')?.curated).toBe('halloween');
 });
 
+it('returns public room presence by code and 404 for an unknown code', async () => {
+  const rooms = new RoomManager();
+  rooms.createCuratedLobby('BOO', 'http://plex', 'secret');
+  rooms.joinRoom('BOO', { id: 'guest', name: 'Guest' });
+  const app = express();
+  app.use(createRoomsRouter(rooms));
+
+  const found = await request(app).get('/boo');
+  expect(found.status).toBe(200);
+  expect(found.body).toEqual({ code: 'BOO', curated: 'halloween', userCount: 1 });
+  expect(JSON.stringify(found.body)).not.toContain('secret');
+  expect(await request(app).get('/missing').then(response => response.body)).toEqual({ error: 'Room not found.' });
+  expect((await request(app).get('/missing')).status).toBe(404);
+});
+
 it('builds one shared curated deck from every movie library', async () => {
   const rooms = new RoomManager();
   rooms.createCuratedLobby('BOO', 'http://plex', 'token');

@@ -11,6 +11,7 @@ export class RoomManager {
   private rooms: Map<string, Room> = new Map(); // Map by roomId (UUID)
   private roomCodes: Map<string, string> = new Map(); // Map roomCode to roomId
   private plexSessions: Map<string, PlexSession> = new Map(); // roomId -> host's Plex creds
+  private likedMovieDetails: Map<string, Map<string, Movie>> = new Map(); // roomId -> movie key -> movie
 
   createRoom(payload: CreateRoomPayload): Room { // Changed parameter to payload
     const roomId = crypto.randomUUID(); // Use UUID for internal ID
@@ -94,6 +95,7 @@ export class RoomManager {
           // Remove code mapping when room is deleted
           this.roomCodes.delete(room.code);
           this.plexSessions.delete(roomId);
+          this.likedMovieDetails.delete(roomId);
         }
         return room;
       }
@@ -120,6 +122,8 @@ export class RoomManager {
   addLikedMovie(roomId: string, movie: Movie, userId: string): Room | undefined { // Added userId
     const room = this.rooms.get(roomId);
     if (room) {
+      if (!this.likedMovieDetails.has(roomId)) this.likedMovieDetails.set(roomId, new Map());
+      this.likedMovieDetails.get(roomId)!.set(movie.key, movie);
       // Initialize movieLikes for this movie if it doesn't exist
       if (!room.movieLikes[movie.key]) {
         room.movieLikes[movie.key] = [];
@@ -144,6 +148,21 @@ export class RoomManager {
       return room;
     }
     return undefined;
+  }
+
+  recheckMatches(roomId: string): Movie[] {
+    const room = this.rooms.get(roomId);
+    if (!room || room.users.length < 2) return [];
+
+    const matches: Movie[] = [];
+    for (const [key, movie] of this.likedMovieDetails.get(roomId) ?? []) {
+      if (room.likedMovies.some(existing => existing.key === key)) continue;
+      if (room.users.every(user => room.movieLikes[key]?.includes(user.id))) {
+        room.likedMovies.push(movie);
+        matches.push(movie);
+      }
+    }
+    return matches;
   }
 
   private generateRoomCode(): string {

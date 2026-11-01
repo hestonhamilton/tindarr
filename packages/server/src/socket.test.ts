@@ -2,6 +2,7 @@ import { createServer, Server as HttpServer } from 'http';
 import { Server } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { createSocketServer } from './socket';
+import { RoomManager } from './room';
 import {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -28,10 +29,12 @@ describe('Socket.IO server', () => {
   let port: number;
   let consoleSpy: jest.SpyInstance;
   let clientSocket: ClientSocket<ServerToClientEvents, ClientToServerEvents>;
+  let roomManager: RoomManager;
 
   beforeAll((done) => {
     server = createServer();
-    io = createSocketServer(server);
+    roomManager = new RoomManager();
+    io = createSocketServer(server, roomManager, 0);
     server.listen(() => {
       const addr = server.address();
       if (typeof addr === 'string') {
@@ -139,5 +142,55 @@ describe('Socket.IO server', () => {
     clientSocket.on('roomNotFound', () => {
       done();
     });
+  });
+
+  it('leaves a room by code and keeps the curated lobby', (done) => {
+    const room = roomManager.createCuratedLobby('BOO', 'http://plex', 'secret');
+    clientSocket.once('userJoined', () => {
+      clientSocket.once('userLeft', (updated) => {
+        expect(updated.users).toEqual([]);
+        expect(roomManager.getRoomByCode('BOO')).toBe(room);
+        expect(JSON.stringify(updated)).not.toContain('secret');
+        done();
+      });
+      clientSocket.emit('leaveRoom', { roomId: room.code, userId: 'guest' });
+    });
+    clientSocket.emit('joinRoom', { roomCode: room.code, user: { id: 'guest', name: 'Guest' } });
+  });
+
+  it('removes a disconnected user only after their last socket disconnects', (done) => {
+    const room = roomManager.createCuratedLobby('BATS', 'http://plex', 'secret');
+    const second = Client(`http://localhost:${port}`) as ClientSocket<ServerToClientEvents, ClientToServerEvents>;
+    const third = Client(`http://localhost:${port}`) as ClientSocket<ServerToClientEvents, ClientToServerEvents>;
+    const guest = { id: 'guest', name: 'Guest' };
+    const finish = (error?: Error) => {
+      second.disconnect();
+      third.disconnect();
+      done(error);
+    };
+
+    clientSocket.once('userJoined', () => {
+      second.once('connect', () => second.emit('joinRoom', { roomCode: room.code, user: guest }));
+      clientSocket.once('userJoined', () => {
+        third.once('connect', () => third.emit('joinRoom', { roomCode: room.code, user: guest }));
+        clientSocket.once('userJoined', () => {
+          second.disconnect();
+          setTimeout(() => {
+            try {
+              expect(room.users.map(user => user.id)).toEqual(['observer', 'guest']);
+              clientSocket.once('userLeft', (updated) => {
+                try {
+                  expect(updated.users.map(user => user.id)).toEqual(['observer']);
+                  expect(room.users.map(user => user.id)).toEqual(['observer']);
+                  finish();
+                } catch (error) { finish(error as Error); }
+              });
+              third.disconnect();
+            } catch (error) { finish(error as Error); }
+          }, 50);
+        });
+      });
+    });
+    clientSocket.emit('joinRoom', { roomCode: room.code, user: { id: 'observer', name: 'Observer' } });
   });
 });

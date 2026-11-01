@@ -54,6 +54,22 @@ describe('RoomManager', () => {
   });
 
   describe('leaveRoom', () => {
+    it('matches saved likes when a holdout leaves, only once', () => {
+      const room = roomManager.createCuratedLobby('BOO', 'http://plex', 'secret');
+      for (const id of ['a', 'b', 'c']) roomManager.joinRoom('BOO', { id, name: id });
+      const movie = { key: '42', title: 'Heat' };
+      roomManager.addLikedMovie(room.id, movie, 'a');
+      roomManager.addLikedMovie(room.id, movie, 'b');
+      expect(room.likedMovies).toEqual([]);
+
+      roomManager.leaveRoom(room.id, 'c');
+      expect(roomManager.recheckMatches(room.id)).toEqual([movie]);
+      expect(roomManager.recheckMatches(room.id)).toEqual([]);
+      expect(room.likedMovies).toEqual([movie]);
+      expect(room).not.toHaveProperty('likedMovieDetails');
+      expect(room).not.toHaveProperty('plexToken');
+    });
+
     it('keeps a curated lobby and replaces its Plex session on refresh', () => {
       const room = roomManager.createCuratedLobby('BOO', 'http://plex', 'first');
       const session = roomManager.getPlexSession(room.id)!;

@@ -115,5 +115,11 @@ export function createRoomsRouter(roomManager: RoomManager) {
     }
   });
 
+  router.get('/:code', (req, res) => {
+    const room = roomManager.getRoomByCode(req.params.code);
+    if (!room) return res.status(404).json({ error: 'Room not found.' });
+    res.json({ code: room.code, curated: room.curated ?? null, userCount: room.users.length });
+  });
+
   return router;
 }
