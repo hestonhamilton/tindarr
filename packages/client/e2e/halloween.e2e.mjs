@@ -94,6 +94,7 @@ async function main() {
       await page.getByText(/Halloween Movie Night/i).first().waitFor({ timeout: 5000 });
       const ambience = page.getByTestId('halloween-ambience');
       check(await appears(ambience), `${name}: Halloween ambience on name gate`);
+      check(await appears(ambience.locator('svg')), `${name}: ambience renders Lottie SVG`);
       check((await ambience.evaluate((el) => getComputedStyle(el).pointerEvents)) === 'none', `${name}: ambience ignores pointer events`);
       await shot(page, `01-name-gate-${name}`);
       await page.getByTestId('name-input').fill(name);
@@ -257,6 +258,7 @@ async function main() {
       check(!(await ambience.isVisible()) || (await ambience.evaluate((el) => getComputedStyle(el).display)) === 'none', 'reduced motion: ambience hidden');
       await page.getByTestId('like-button').click();
       check((await page.getByTestId('swipe-burst').count()) === 0, 'reduced motion: like adds no burst');
+      check((await page.locator('svg').count()) === 0, 'reduced motion: no Lottie SVG in room');
       await context.close();
     }
   } finally {

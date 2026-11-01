@@ -342,6 +342,10 @@
 .gateCard h1 { font-size: clamp(1.8rem, 7vw, 2.6rem); margin: 0; }
 .gateCard p { margin: 0 0 8px; }
 .gateIcon { font-size: 3rem; line-height: 1; }
+.gateIcon .lottieIcon { width: 84px; height: 84px; }
+.lottieIcon { display: inline-block; width: 100%; height: 100%; vertical-align: middle; }
+.lottieIcon svg { display: block; width: 100%; height: 100%; }
+.emojiCredit { display: block; font-size: 10px; line-height: 1.3; opacity: .55; }
 .gateCard label { font-weight: 700; }
 .gateCard input { min-height: 50px; box-sizing: border-box; width: 100%; border-radius: 10px; border: 2px solid #777; background: #fff; color: #17131d; font: inherit; padding: 10px 14px; }
 .gateCard button { min-height: 52px; }
@@ -415,37 +419,35 @@
 /* Halloween motion sits outside the swipe card and never receives input. */
 .halloweenAmbience { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .roomGate.halloween > :not(.halloweenAmbience), .room.halloween > :not(.halloweenAmbience, .overlay) { position: relative; z-index: 1; }
-.batSymbols { position: absolute; width: 0; height: 0; }
-.ambientBat { position: absolute; left: -10%; color: #0d0814; animation: batDrift 20s linear infinite; }
-.ambientBat svg { display: block; width: 100%; animation: batFlap .32s ease-in-out infinite alternate; transform-origin: center; }
+.ambientBat { position: absolute; left: -20%; height: auto; aspect-ratio: 1; opacity: .96; animation: batDrift 20s linear infinite; }
 .fogBand { position: absolute; left: -20%; bottom: -12%; width: 140%; height: 35%; background: radial-gradient(ellipse at center, #a664b733 0%, #a664b71a 40%, transparent 72%); animation: fogDrift 18s ease-in-out infinite alternate; }
 .fogTwo { bottom: -20%; background: radial-gradient(ellipse at center, #ffad6924 0%, #a664b715 46%, transparent 75%); animation-duration: 24s; animation-direction: alternate-reverse; }
-@keyframes batDrift { from { transform: translateX(0); } to { transform: translateX(125vw); } }
-@keyframes batFlap { from { transform: scaleY(.55); } to { transform: scaleY(1); } }
+@keyframes batDrift { from { transform: translateX(0); } to { transform: translateX(calc(140vw + 80px)); } }
 @keyframes fogDrift { from { transform: translateX(-5%); opacity: .35; } to { transform: translateX(5%); opacity: .75; } }
-.halloween .gateIcon, .halloween .roomChip { position: relative; isolation: isolate; }
-.halloween .gateIcon::before, .halloween .roomChip::before { content: ''; position: absolute; z-index: -1; inset: -8px; background: radial-gradient(circle, #ff75187a, transparent 68%); animation: pumpkinFlicker 3.7s linear infinite; pointer-events: none; }
-@keyframes pumpkinFlicker { 0%, 12%, 19%, 36%, 48%, 79%, 100% { opacity: .25; } 5%, 16%, 42%, 51%, 73%, 83% { opacity: .9; } }
+.halloween .gateIcon { position: relative; width: max-content; }
+.halloween .gateIcon::before { content: ''; position: absolute; inset: 8%; background: radial-gradient(circle, #ff751855, transparent 70%); pointer-events: none; }
+.halloween .gateIcon .lottieIcon { position: relative; }
+.chipPumpkin { width: 22px; height: 22px; }
+.roomChip { display: inline-flex; align-items: center; }
 .swipeLikeBurst, .swipeNopeBurst { position: absolute; inset: 0; pointer-events: none; }
 .swipeLikeBurst { z-index: 0; }
-.swipeLikeBurst { inset: -6%; border-radius: 50%; background: radial-gradient(ellipse, #ff7518c0 0%, #ff75188a 65%, transparent 95%); animation: likeCardPulse .65s ease-out both; }
-.likePumpkin { position: absolute; z-index: 2; left: 50%; top: 45%; font-size: 2.2rem; pointer-events: none; animation: pumpkinPop .65s ease-out both; }
+.swipeLikeBurst { inset: 0; border-radius: 20px; background: radial-gradient(ellipse, #ff751859, transparent 78%); box-shadow: 0 0 55px 20px #ffb36b73; animation: likeCardPulse .9s ease-out both; }
+.likePumpkin { position: absolute; z-index: 3; left: 50%; top: 66%; width: 96px; height: 96px; pointer-events: none; animation: pumpkinPop .9s ease-out both; }
 .halloween .cardContainer .swipe { z-index: 1; }
 .swipeNopeBurst { z-index: 2; }
-.swipeBat, .matchBat { position: absolute; left: 50%; top: 50%; width: 22px; color: #0d0814; animation: batBurst .7s ease-out both; }
-.swipeBat svg, .matchBat svg { display: block; width: 100%; }
-.swipeBat:nth-child(even), .matchBat:nth-child(even) { color: #482b59; }
+.swipeBat, .matchBat { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; animation: batBurst .8s ease-out both; }
 @keyframes likePulse { from { transform: scale(.5); opacity: 0; } 35% { opacity: 1; } to { transform: scale(1.25); opacity: 0; } }
 @keyframes likeCardPulse { from { transform: scale(.8); opacity: 0; } 35% { opacity: 1; } to { transform: scale(1.08); opacity: 0; } }
-@keyframes pumpkinPop { from { transform: translate(-50%, 10px) scale(.3); opacity: 0; } 35% { opacity: 1; } to { transform: translate(-50%, -80px) scale(1.2); opacity: 0; } }
-@keyframes batBurst { from { transform: rotate(var(--angle)) translateX(0) scale(.3); opacity: 1; } to { transform: rotate(var(--angle)) translateX(var(--distance)) scale(1.3); opacity: 0; } }
+@keyframes pumpkinPop { from { transform: translate(-50%, 12px) scale(.6); opacity: 0; } 30%, 65% { transform: translate(-50%, -12px) scale(1); opacity: 1; } to { transform: translate(-50%, -32px) scale(1.08); opacity: 0; } }
+@keyframes batBurst { from { transform: translate(-50%, -50%) rotate(var(--angle)) translateX(0) scale(.65); opacity: 0; } 18% { opacity: 1; } to { transform: translate(-50%, -50%) rotate(var(--angle)) translateX(var(--distance)) scale(1.1); opacity: 0; } }
 .matchPosterWrap { position: relative; line-height: 0; }
 .halloweenMatch .matchPoster { position: relative; box-shadow: 0 0 35px #ff75188c; }
 .matchGlow { position: absolute; inset: -28%; border-radius: 50%; background: radial-gradient(ellipse, #ff7518a6, transparent 70%); animation: likePulse .9s ease-out both; pointer-events: none; }
 .matchBats { position: absolute; inset: 0; pointer-events: none; }
-.matchBat { width: 18px; animation-duration: 1.15s; }
+.matchBat { width: 54px; height: 54px; animation-duration: 1.4s; }
+.matchPumpkin { width: 42px; height: 42px; line-height: 1; font-size: 34px; }
 .halloweenMatch h1, .halloweenMatch .openInPlex { color: #ffad69; }
 .halloweenMatch .play { background: #ff7518; color: #1a1020; }
 @media (prefers-reduced-motion: reduce) {
-  .halloweenAmbience, .swipeLikeBurst, .likePumpkin, .swipeNopeBurst, .matchGlow, .matchBats { display: none; }
+  .swipeLikeBurst, .likePumpkin, .swipeNopeBurst, .matchGlow, .matchBats { display: none; }
 }

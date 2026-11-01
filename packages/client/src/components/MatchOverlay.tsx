@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Movie, Player } from '../types';
 import { posterSrc } from '../api';
-import { BatIcon } from './halloween/HalloweenAmbience';
+import LottieIcon from './halloween/LottieIcon';
 
 interface MatchOverlayProps {
   roomCode: string;
@@ -19,6 +19,14 @@ const MatchOverlay: React.FC<MatchOverlayProps> = ({ roomCode, movie, onClose, h
   const [status, setStatus] = useState<string | null>(null);
   const [serverId, setServerId] = useState<string | null>(null);
   const motion = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [showBats, setShowBats] = useState(motion);
+
+  useEffect(() => {
+    if (!halloween || !motion) return;
+    setShowBats(true);
+    const timer = setTimeout(() => setShowBats(false), 1400);
+    return () => clearTimeout(timer);
+  }, [movie.key, halloween, motion]);
 
   const loadPlayers = async () => {
     setPlayers(null);
@@ -57,9 +65,11 @@ const MatchOverlay: React.FC<MatchOverlayProps> = ({ roomCode, movie, onClose, h
           }} />
         ))}
       </div>
+      {halloween && <span className='matchPumpkin' aria-hidden='true'>{motion ? <LottieIcon name='jack-o-lantern' /> : '🎃'}</span>}
       <h1>It's a match!</h1>
       {halloween ? <div className='matchPosterWrap'>
-        {motion && <><span className='matchGlow' aria-hidden='true' /><span className='matchBats' aria-hidden='true'>{Array.from({ length: 12 }, (_, i) => <span className='matchBat' key={i} style={{ '--angle': `${i * 30}deg`, '--distance': `${90 + (i % 4) * 22}px` } as React.CSSProperties}><BatIcon /></span>)}</span></>}
+        {motion && <span className='matchGlow' aria-hidden='true' />}
+        {showBats && <span className='matchBats' aria-hidden='true'>{Array.from({ length: 6 }, (_, i) => <span className='matchBat' key={i} style={{ '--angle': `${i * 60 - 150}deg`, '--distance': `${95 + (i % 3) * 22}px` } as React.CSSProperties}><LottieIcon name='bat' /></span>)}</span>}
         {movie.posterUrl && <img className='matchPoster' src={posterSrc(roomCode, movie.posterUrl)} alt={movie.title} />}
       </div> : movie.posterUrl && <img className='matchPoster' src={posterSrc(roomCode, movie.posterUrl)} alt={movie.title} />}
       <h2>{movie.title}{movie.year ? ` (${movie.year})` : ''}</h2>
