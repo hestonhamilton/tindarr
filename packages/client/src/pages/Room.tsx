@@ -10,7 +10,7 @@ import axios from 'axios';
 import InviteModal from '../components/InviteModal';
 import MatchOverlay from '../components/MatchOverlay';
 import HalloweenAmbience from '../components/halloween/HalloweenAmbience';
-import LottieIcon from '../components/halloween/LottieIcon';
+import LottieIcon, { preloadHalloweenLottie } from '../components/halloween/LottieIcon';
 import { posterSrc } from '../api';
 import { getResumeIndex, getTally } from '../roomHelpers';
 
@@ -158,6 +158,7 @@ const RoomPage: React.FC = () => {
   const missing = (preview.isError && !preview.data) || roomNotFound; // a failed background refetch mid-game isn't "missing"
   const halloween = preview.data?.curated === 'halloween' || roomState?.curated === 'halloween';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  useEffect(() => { if (halloween && !reducedMotion) preloadHalloweenLottie(); }, [halloween, reducedMotion]);
   const pumpkin = halloween && !reducedMotion ? <LottieIcon name='jack-o-lantern' /> : halloween ? '🎃' : '🎬';
   const credit = halloween && <small className='emojiCredit'>Animated emoji: Google Noto · CC BY 4.0</small>;
 

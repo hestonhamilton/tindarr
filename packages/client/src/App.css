@@ -451,3 +451,5 @@
 @media (prefers-reduced-motion: reduce) {
   .swipeLikeBurst, .likePumpkin, .swipeNopeBurst, .matchGlow, .matchBats { display: none; }
 }
+/* Bats drift behind the header; a soft shadow keeps its text crisp when one passes under it */
+.room.halloween .roomHeader { text-shadow: 0 1px 3px #000c; }
