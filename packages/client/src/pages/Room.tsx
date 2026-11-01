@@ -160,7 +160,7 @@ const RoomPage: React.FC = () => {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   useEffect(() => { if (halloween && !reducedMotion) preloadHalloweenLottie(); }, [halloween, reducedMotion]);
   const pumpkin = halloween && !reducedMotion ? <LottieIcon name='jack-o-lantern' /> : halloween ? '🎃' : '🎬';
-  const credit = halloween && <small className='emojiCredit'>Animated emoji: Google Noto · CC BY 4.0</small>;
+  const credit = halloween && <small className='emojiCredit'>Animated emoji: Google Noto · <a href='https://creativecommons.org/licenses/by/4.0/legalcode' target='_blank' rel='noopener noreferrer'>CC BY 4.0</a></small>;
 
   if (missing) return <main className={`roomGate ${halloween ? 'halloween' : ''}`}><div className='gateCard'><span className='gateIcon'>🎃</span><h1>This lobby isn't open yet</h1><p>Ask the host to open it, then try again.</p><button onClick={() => { setRoomNotFound(false); void preview.refetch(); }} aria-label='Retry opening room'>Retry</button></div></main>;
   if (preview.isLoading) return <main className='roomGate'><p>Looking for the lobby…</p></main>;
