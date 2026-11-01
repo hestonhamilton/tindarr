@@ -77,10 +77,10 @@ export class RoomManager {
   joinRoom(roomCode: string, user: User): Room | null { // Accepts roomCode
     const room = this.getRoomByCode(roomCode); // Find by code
     if (room) {
-      // Only add user if they are not already in the room
-      if (!room.users.some(existingUser => existingUser.id === user.id)) {
-        room.users.push(user);
-      }
+      // Only add user if they are not already in the room; a re-join with a new name renames them
+      const existing = room.users.find(existingUser => existingUser.id === user.id);
+      if (existing) existing.name = user.name;
+      else room.users.push(user);
       return room;
     }
     return null;

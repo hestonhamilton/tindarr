@@ -37,6 +37,13 @@ const RoomPage: React.FC = () => {
   const plexToken = localStorage.getItem('plexToken') || '';
   const [plexServerId, setPlexServerId] = useState<string | null>(null);
   const positionKey = `tindarr:pos:${roomCode}`;
+  // A name stored by an earlier Tindarr visit isn't consent to join this lobby under it: the
+  // name screen shows (prefilled) the first time this browser opens each room
+  const joinedKey = `tindarr:joined:${roomCode}`;
+  const [joined, setJoined] = useState(() => !!userId && localStorage.getItem(joinedKey) === userId);
+  const [renaming, setRenaming] = useState(false);
+  const userNameRef = useRef(userName);
+  userNameRef.current = userName;
 
   const preview = useQuery<RoomPreview>({
     queryKey: ['roomPreview', roomCode],
@@ -60,8 +67,10 @@ const RoomPage: React.FC = () => {
   // re-running this effect would emit leaveRoom, which can hand the others a premature match
   const lobbyFound = !!preview.data;
   useEffect(() => {
-    if (!socket || !roomCode || !userId || !userName || !lobbyFound) return;
-    const join = () => socket.emit('joinRoom', { roomCode, user: { id: userId, name: userName } });
+    if (!socket || !roomCode || !userId || !joined || !lobbyFound) return;
+    // Name via a ref: a rename re-joins (below) rather than re-running this effect, whose
+    // cleanup emits leaveRoom and could hand the others a premature match
+    const join = () => socket.emit('joinRoom', { roomCode, user: { id: userId, name: userNameRef.current } });
     const update = (room: Room) => { setRoomState(room); setRoomNotFound(false); };
     const notFound = () => setRoomNotFound(true);
     socket.on('connect', join);
@@ -80,7 +89,7 @@ const RoomPage: React.FC = () => {
       socket.off('match', setMatch);
       socket.emit('leaveRoom', { roomId: roomCode, userId });
     };
-  }, [socket, roomCode, userId, userName, lobbyFound]);
+  }, [socket, roomCode, userId, joined, lobbyFound]);
 
   useEffect(() => {
     if (roomState && userId && userName && searchParams.get('invite') === '1') {
@@ -107,8 +116,12 @@ const RoomPage: React.FC = () => {
     const id = userId || localStorage.getItem('userId') || uuidv4();
     localStorage.setItem('userId', id);
     localStorage.setItem('userName', name);
+    localStorage.setItem(joinedKey, id);
     setUserId(id);
     setUserName(name);
+    setRenaming(false);
+    if (joined) socket?.emit('joinRoom', { roomCode, user: { id, name } }); // rename in place
+    else setJoined(true);
   };
 
   const advance = (direction: string) => {
@@ -135,15 +148,16 @@ const RoomPage: React.FC = () => {
 
   if (missing) return <main className={`roomGate ${halloween ? 'halloween' : ''}`}><div className='gateCard'><span className='gateIcon'>🎃</span><h1>This lobby isn't open yet</h1><p>Ask the host to open it, then try again.</p><button onClick={() => { setRoomNotFound(false); void preview.refetch(); }} aria-label='Retry opening room'>Retry</button></div></main>;
   if (preview.isLoading) return <main className='roomGate'><p>Looking for the lobby…</p></main>;
-  if (!userId || !userName) return (
+  if (!userId || !userName || !joined || renaming) return (
     <main className={`roomGate ${halloween ? 'halloween' : ''}`}>
       <form className='gateCard' onSubmit={joinAs}>
         <span className='gateIcon' aria-hidden='true'>{halloween ? '🎃' : '🎬'}</span>
         <h1>{halloween ? 'Halloween Movie Night' : `Join room ${roomCode}`}</h1>
-        <p>Pick a name to join · {preview.data?.userCount ?? 0} here</p>
+        <p>{renaming ? 'Change the name friends see' : `Pick a name to join · ${preview.data?.userCount ?? 0} here`}</p>
         <label htmlFor='joinName'>Your name</label>
         <input id='joinName' data-testid='name-input' autoComplete='off' autoFocus value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder='e.g. Sam' />
-        <button data-testid='join-button' type='submit' disabled={!nameInput.trim()}>Join the lobby</button>
+        <button data-testid='join-button' type='submit' disabled={!nameInput.trim()}>{renaming ? 'Save name' : 'Join the lobby'}</button>
+        {renaming && <button type='button' onClick={() => { setNameInput(userName); setRenaming(false); }}>Cancel</button>}
       </form>
     </main>
   );
@@ -158,7 +172,7 @@ const RoomPage: React.FC = () => {
   return <main className={`room ${halloween ? 'halloween' : ''} ${done ? 'roomDone' : ''}`}>
     <header className='roomHeader'>
       <div className='roomHeaderTop'><span className='roomChip'>{halloween ? '🎃 Movie Night' : `Room ${roomState.code}`}</span><button className='inviteButton' aria-label='Invite friends' onClick={() => setIsInviteOpen(true)}>Invite</button></div>
-      <div className='people' data-testid='people' aria-label="Who's here">{roomState.users.map(user => <span className='personChip' key={user.id}>{user.name}</span>)}</div>
+      <div className='people' data-testid='people' aria-label="Who's here">{roomState.users.map(user => <span className='personChip' key={user.id}>{user.name}</span>)}<button className='renameButton' data-testid='rename-button' aria-label='Change your name' onClick={() => { setNameInput(userName); setRenaming(true); }}>Change name</button></div>
       <p className='roomStats'>{roomState.users.length} here · {roomState.likedMovies.length} matches</p>
       {roomState.users.length === 1 && <p className='waitingHint'>Waiting for friends — matches need at least 2</p>}
     </header>

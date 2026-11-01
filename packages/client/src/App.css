@@ -408,3 +408,5 @@
   .matchPoster { width: min(37vw, 135px); }
 }
 #root:has(> .room), #root:has(> .roomGate) { max-width: none; padding: 0; }
+
+.renameButton { min-height: 32px; padding: 2px 12px; background: transparent; color: inherit; border: 1px dashed currentColor; border-radius: 999px; font-size: .85rem; opacity: .85; }

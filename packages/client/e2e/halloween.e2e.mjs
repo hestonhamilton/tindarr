@@ -178,6 +178,37 @@ async function main() {
       await fitsScreen(page, `${name} tally`, []);
       await shot(page, `04-tally-${name}`);
     }
+
+    // A returning visitor (name stored by an earlier Tindarr visit) still gets the name screen,
+    // prefilled, and can rename from the lobby without a duplicate chip or anyone leaving
+    {
+      const context = await browser.newContext({ ...devices['iPhone 13'], defaultBrowserType: undefined });
+      await context.addInitScript(() => {
+        if (!localStorage.getItem('userId')) {
+          localStorage.setItem('userId', 'returning-visitor');
+          localStorage.setItem('userName', 'Old Name');
+        }
+      });
+      const page = await context.newPage();
+      await page.goto(`${base}/room/BOO`);
+      const input = page.getByTestId('name-input');
+      check(await appears(input), 'returning visitor: name screen shown despite a stored name');
+      check((await input.inputValue()) === 'Old Name', 'returning visitor: name prefilled');
+      await shot(page, '05-returning-name-gate');
+      await input.fill('Dan');
+      await page.getByTestId('join-button').click();
+      await page.getByTestId('rename-button').click();
+      await page.getByTestId('name-input').fill('Danny');
+      await page.getByTestId('join-button').click();
+      const people = ana.page.getByTestId('people');
+      check(await appears(people.getByText('Danny')), 'rename shows on the other phones');
+      check((await people.locator('.personChip').count()) === 4 && !(await people.getByText('Dan', { exact: true }).count()),
+        'rename replaces the chip (4 people, no stale "Dan")');
+      await page.reload();
+      check(await appears(page.getByTestId('people').getByText('Danny')), 'returning visitor: reload goes straight back in as Danny');
+      await shot(page, '06-renamed');
+      await context.close();
+    }
   } finally {
     await browser.close();
     server.kill();

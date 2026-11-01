@@ -45,6 +45,12 @@ describe('RoomManager', () => {
       expect(updatedRoom?.users[1]).toEqual(user2);
     });
 
+    it('renames a user who re-joins with a new name', () => {
+      const room = roomManager.createRoom(mockCreateRoomPayload({ id: '1', name: 'Old' }));
+      roomManager.joinRoom(room.code, { id: '1', name: 'New' });
+      expect(room.users).toEqual([{ id: '1', name: 'New' }]);
+    });
+
     it('should return null if the room does not exist', () => {
       const user: User = { id: '1', name: 'test' };
       const result = roomManager.joinRoom('non-existent-room', user);
