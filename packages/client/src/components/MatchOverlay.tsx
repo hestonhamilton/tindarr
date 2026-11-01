@@ -2,19 +2,23 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Movie, Player } from '../types';
 import { posterSrc } from '../api';
+import { BatIcon } from './halloween/HalloweenAmbience';
 
 interface MatchOverlayProps {
   roomCode: string;
   movie: Movie;
   onClose: () => void;
+  halloween?: boolean;
 }
 
 const CONFETTI_COLORS = ['#E5A000', '#ff4d6d', '#4dabf7', '#51cf66', '#ffd43b'];
+const HALLOWEEN_COLORS = ['#ff7518', '#a664b7', '#6bd66b', '#fff3e8'];
 
-const MatchOverlay: React.FC<MatchOverlayProps> = ({ roomCode, movie, onClose }) => {
+const MatchOverlay: React.FC<MatchOverlayProps> = ({ roomCode, movie, onClose, halloween = false }) => {
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [serverId, setServerId] = useState<string | null>(null);
+  const motion = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const loadPlayers = async () => {
     setPlayers(null);
@@ -43,18 +47,21 @@ const MatchOverlay: React.FC<MatchOverlayProps> = ({ roomCode, movie, onClose })
   };
 
   return (
-    <div className='overlay match' data-testid='match-overlay'>
+    <div className={`overlay match ${halloween ? 'halloweenMatch' : ''}`} data-testid='match-overlay'>
       <div className='confetti' aria-hidden>
         {Array.from({ length: 40 }, (_, i) => (
           <span key={i} style={{
             left: `${(i * 37) % 100}%`,
-            background: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+            background: (halloween ? HALLOWEEN_COLORS : CONFETTI_COLORS)[i % (halloween ? HALLOWEEN_COLORS : CONFETTI_COLORS).length],
             animationDelay: `${(i % 10) * 0.15}s`,
           }} />
         ))}
       </div>
       <h1>It's a match!</h1>
-      {movie.posterUrl && <img className='matchPoster' src={posterSrc(roomCode, movie.posterUrl)} alt={movie.title} />}
+      {halloween ? <div className='matchPosterWrap'>
+        {motion && <><span className='matchGlow' aria-hidden='true' /><span className='matchBats' aria-hidden='true'>{Array.from({ length: 12 }, (_, i) => <span className='matchBat' key={i} style={{ '--angle': `${i * 30}deg`, '--distance': `${90 + (i % 4) * 22}px` } as React.CSSProperties}><BatIcon /></span>)}</span></>}
+        {movie.posterUrl && <img className='matchPoster' src={posterSrc(roomCode, movie.posterUrl)} alt={movie.title} />}
+      </div> : movie.posterUrl && <img className='matchPoster' src={posterSrc(roomCode, movie.posterUrl)} alt={movie.title} />}
       <h2>{movie.title}{movie.year ? ` (${movie.year})` : ''}</h2>
 
       <div className='actions'>

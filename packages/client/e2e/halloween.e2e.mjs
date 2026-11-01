@@ -92,6 +92,9 @@ async function main() {
       page.on('pageerror', (e) => check(false, `${name}: page error ${e.message}`));
       await page.goto(`${base}/room/BOO`);
       await page.getByText(/Halloween Movie Night/i).first().waitFor({ timeout: 5000 });
+      const ambience = page.getByTestId('halloween-ambience');
+      check(await appears(ambience), `${name}: Halloween ambience on name gate`);
+      check((await ambience.evaluate((el) => getComputedStyle(el).pointerEvents)) === 'none', `${name}: ambience ignores pointer events`);
       await shot(page, `01-name-gate-${name}`);
       await page.getByTestId('name-input').fill(name);
       await page.getByTestId('join-button').click();
@@ -102,8 +105,10 @@ async function main() {
       const people = page.getByTestId('people');
       for (const other of PHONES) await people.getByText(other.name).waitFor({ timeout: 5000 });
       check(true, `${name}: lobby shows all three people`);
+      check(await appears(page.getByTestId('halloween-ambience')), `${name}: Halloween ambience in lobby`);
       await fitsScreen(page, `${name} lobby`, ['.movieInfo h2', '[data-testid="like-button"]', '[data-testid="nope-button"]']);
       await shot(page, `02-lobby-${name}`);
+      if (name === 'Ana' || name === 'Cat') await shot(page, `08-ambience-${name === 'Ana' ? '320' : '412'}`);
     }
 
     // The Invite QR (ghost style, logo in place) decodes to the lobby URL, and fits a 320px phone
@@ -133,6 +138,11 @@ async function main() {
     for (const { page } of phones) await page.getByTestId('like-button').click();
     for (const { name, page } of phones) {
       check(await appears(page.getByTestId('match-overlay')), `${name}: match overlay after unanimous like`);
+      if (name === 'Ana') {
+        check(await appears(page.locator('.matchBat')), 'match overlay has Halloween bats');
+        await page.waitForTimeout(250);
+        await shot(page, '11-match-bats');
+      }
       await page.waitForTimeout(900); // let the pop-in animation finish before the screenshot
       await fitsScreen(page, `${name} match`, ['[data-testid="match-overlay"] button:has-text("Keep swiping")']);
       await shot(page, `03-match-${name}`);
@@ -143,7 +153,13 @@ async function main() {
     const [ana, ben, cat] = phones;
     const secondTitle = await titleOf(ana.page);
     await ana.page.getByTestId('nope-button').click();
+    check(await appears(ana.page.getByTestId('swipe-burst')), 'nope triggers swipe burst');
+    await ana.page.waitForTimeout(200);
+    await shot(ana.page, '09-nope-burst');
     await ben.page.getByTestId('like-button').click();
+    check(await appears(ben.page.getByTestId('swipe-burst')), 'like triggers swipe burst');
+    await ben.page.waitForTimeout(200);
+    await shot(ben.page, '10-like-glow');
     await cat.page.getByTestId('like-button').click();
     await ben.page.waitForTimeout(1500);
     check(!(await ben.page.getByTestId('match-overlay').isVisible()), 'no match when one person says nope');
@@ -226,6 +242,21 @@ async function main() {
       await page.reload();
       check(await appears(page.getByTestId('people').getByText('Danny')), 'returning visitor: reload goes straight back in as Danny');
       await shot(page, '06-renamed');
+      await context.close();
+    }
+
+    // Run reduced motion last so this extra visitor cannot affect the three-phone vote checks.
+    {
+      const context = await browser.newContext({ ...devices['iPhone SE'], defaultBrowserType: undefined, reducedMotion: 'reduce' });
+      const page = await context.newPage();
+      await page.goto(`${base}/room/BOO`);
+      await page.getByTestId('name-input').fill('Quiet');
+      await page.getByTestId('join-button').click();
+      await page.getByTestId('like-button').waitFor({ timeout: 10000 });
+      const ambience = page.getByTestId('halloween-ambience');
+      check(!(await ambience.isVisible()) || (await ambience.evaluate((el) => getComputedStyle(el).display)) === 'none', 'reduced motion: ambience hidden');
+      await page.getByTestId('like-button').click();
+      check((await page.getByTestId('swipe-burst').count()) === 0, 'reduced motion: like adds no burst');
       await context.close();
     }
   } finally {

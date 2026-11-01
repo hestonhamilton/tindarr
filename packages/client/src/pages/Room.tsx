@@ -9,6 +9,7 @@ import MovieDetailsModal from '../components/MovieDetailsModal';
 import axios from 'axios';
 import InviteModal from '../components/InviteModal';
 import MatchOverlay from '../components/MatchOverlay';
+import HalloweenAmbience, { BatIcon } from '../components/halloween/HalloweenAmbience';
 import { posterSrc } from '../api';
 import { getResumeIndex, getTally } from '../roomHelpers';
 
@@ -30,6 +31,9 @@ const RoomPage: React.FC = () => {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [match, setMatch] = useState<Movie | null>(null);
   const [pendingSwipe, setPendingSwipe] = useState<string | null>(null);
+  const [swipeBurst, setSwipeBurst] = useState<{ direction: string; key: number } | null>(null);
+  const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const burstKey = useRef(0);
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
@@ -44,6 +48,7 @@ const RoomPage: React.FC = () => {
   const [renaming, setRenaming] = useState(false);
   const userNameRef = useRef(userName);
   userNameRef.current = userName;
+  useEffect(() => () => { if (burstTimer.current) clearTimeout(burstTimer.current); }, []);
 
   const preview = useQuery<RoomPreview>({
     queryKey: ['roomPreview', roomCode],
@@ -126,6 +131,12 @@ const RoomPage: React.FC = () => {
 
   const advance = (direction: string) => {
     if (!movies || currentIndex === null || !movies[currentIndex]) return;
+    if (halloween && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && (direction === 'left' || direction === 'right')) {
+      if (burstTimer.current) clearTimeout(burstTimer.current);
+      const key = ++burstKey.current;
+      setSwipeBurst({ direction, key });
+      burstTimer.current = setTimeout(() => setSwipeBurst(current => current?.key === key ? null : current), 750);
+    }
     if (direction === 'right') socket?.emit('likeMovie', { roomId: roomCode, userId, movie: movies[currentIndex] });
     if (direction === 'left') socket?.emit('dislikeMovie', { roomId: roomCode, userId, movieId: movies[currentIndex].key });
     localStorage.setItem(positionKey, movies[currentIndex + 1]?.key ?? '__done__');
@@ -150,6 +161,7 @@ const RoomPage: React.FC = () => {
   if (preview.isLoading) return <main className='roomGate'><p>Looking for the lobby…</p></main>;
   if (!userId || !userName || !joined || renaming) return (
     <main className={`roomGate ${halloween ? 'halloween' : ''}`}>
+      {halloween && <HalloweenAmbience />}
       <form className='gateCard' onSubmit={joinAs}>
         <span className='gateIcon' aria-hidden='true'>{halloween ? '🎃' : '🎬'}</span>
         <h1>{halloween ? 'Halloween Movie Night' : `Join room ${roomCode}`}</h1>
@@ -170,6 +182,7 @@ const RoomPage: React.FC = () => {
   const formatDuration = (ms?: number) => ms === undefined ? '' : `${Math.floor(ms / 3600000) ? `${Math.floor(ms / 3600000)}h ` : ''}${Math.floor(ms % 3600000 / 60000)}m`;
 
   return <main className={`room ${halloween ? 'halloween' : ''} ${done ? 'roomDone' : ''}`}>
+    {halloween && <HalloweenAmbience />}
     <header className='roomHeader'>
       <div className='roomHeaderTop'><span className='roomChip'>{halloween ? '🎃 Movie Night' : `Room ${roomState.code}`}</span><button className='inviteButton' aria-label='Invite friends' onClick={() => setIsInviteOpen(true)}>Invite</button></div>
       <div className='people' data-testid='people' aria-label="Who's here">{roomState.users.map(user => <span className='personChip' key={user.id}>{user.name}</span>)}<button className='renameButton' data-testid='rename-button' aria-label='Change your name' onClick={() => { setNameInput(userName); setRenaming(true); }}>Change name</button></div>
@@ -178,11 +191,16 @@ const RoomPage: React.FC = () => {
     </header>
 
     {currentMovie ? <>
-      <div className='cardContainer'><TinderCard className='swipe' key={currentMovie.key} onSwipe={onCardSwipe} preventSwipe={PREVENT_SWIPE} swipeRequirementType='position' swipeThreshold={100} onSwipeRequirementFulfilled={onRequirementFulfilled} onSwipeRequirementUnfulfilled={onRequirementUnfulfilled}>
+      <div className='cardContainer'>
+        {swipeBurst?.direction === 'right' && <span className='swipeLikeBurst' data-testid='swipe-burst' key={swipeBurst.key} aria-hidden='true' />}
+        <TinderCard className='swipe' key={currentMovie.key} onSwipe={onCardSwipe} preventSwipe={PREVENT_SWIPE} swipeRequirementType='position' swipeThreshold={100} onSwipeRequirementFulfilled={onRequirementFulfilled} onSwipeRequirementUnfulfilled={onRequirementUnfulfilled}>
         <div className='card' style={{ backgroundImage: `url(${posterSrc(roomCode, currentMovie.posterUrl)})` }}>
           {pendingSwipe === 'right' && <span className='stamp like'>LIKE</span>}{pendingSwipe === 'left' && <span className='stamp nope'>NOPE</span>}
         </div>
-      </TinderCard></div>
+        </TinderCard>
+        {swipeBurst?.direction === 'right' && <span className='likePumpkin' key={`pumpkin-${swipeBurst.key}`} aria-hidden='true'>🎃</span>}
+        {swipeBurst?.direction === 'left' && <span className='swipeNopeBurst' data-testid='swipe-burst' key={swipeBurst.key} aria-hidden='true'>{Array.from({ length: 6 }, (_, i) => <span className='swipeBat' key={i} style={{ '--angle': `${i * 60}deg`, '--distance': `${80 + (i % 3) * 30}px` } as React.CSSProperties}><BatIcon /></span>)}</span>}
+      </div>
       <div className='swipeButtons'><button className='nope' data-testid='nope-button' aria-label='Nope, next movie' onClick={() => advance('left')}>✕</button><button className='like' data-testid='like-button' aria-label='Like this movie' onClick={() => advance('right')}>♥</button></div>
       <button className='movieInfo' aria-label={`Details for ${currentMovie.title}`} onClick={() => showDetails(currentMovie)}>
         <h2>{currentMovie.title}{currentMovie.year && <span className='year'> ({currentMovie.year})</span>}</h2>
@@ -197,7 +215,7 @@ const RoomPage: React.FC = () => {
 
     {isModalOpen && selectedMovie && <MovieDetailsModal movie={selectedMovie} onClose={() => setIsModalOpen(false)} plexUrl={plexUrl} plexToken={plexToken} plexServerId={plexServerId} posterSrc={posterSrc(roomCode, selectedMovie.posterUrl)} />}
     {isInviteOpen && <InviteModal roomCode={roomState.code} halloween={halloween} onClose={() => setIsInviteOpen(false)} />}
-    {match && <MatchOverlay roomCode={roomState.code} movie={match} onClose={() => setMatch(null)} />}
+    {match && <MatchOverlay roomCode={roomState.code} movie={match} halloween={halloween} onClose={() => setMatch(null)} />}
   </main>;
 };
 
