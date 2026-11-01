@@ -2,6 +2,7 @@ import { createServer, Server as HttpServer } from 'http';
 import { Server } from 'socket.io';
 import Client, { Socket as ClientSocket } from 'socket.io-client';
 import { createSocketServer } from './socket';
+import { RoomManager } from './room';
 import {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -28,10 +29,12 @@ describe('Socket.IO server', () => {
   let port: number;
   let consoleSpy: jest.SpyInstance;
   let clientSocket: ClientSocket<ServerToClientEvents, ClientToServerEvents>;
+  let roomManager: RoomManager;
 
   beforeAll((done) => {
     server = createServer();
-    io = createSocketServer(server);
+    roomManager = new RoomManager();
+    io = createSocketServer(server, roomManager, 0);
     server.listen(() => {
       const addr = server.address();
       if (typeof addr === 'string') {
@@ -112,11 +115,93 @@ describe('Socket.IO server', () => {
     });
   });
 
+  it('should emit match once every user in the room likes the same movie', (done) => {
+    const host: User = { id: 'h', name: 'host' };
+    const guest: User = { id: 'g', name: 'guest' };
+    const movie = { key: '42', title: 'Heat' };
+    clientSocket.emit('createRoom', { ...mockCreateRoomPayload(host), plexUrl: 'http://plex', plexToken: 'secret' });
+    clientSocket.on('roomCreated', (room) => {
+      expect(JSON.stringify(room)).not.toContain('secret'); // host token stays server-side
+      const client2 = Client(`http://localhost:${port}`) as ClientSocket<ServerToClientEvents, ClientToServerEvents>;
+      client2.on('connect', () => client2.emit('joinRoom', { roomCode: room.code, user: guest }));
+      client2.on('userJoined', () => {
+        clientSocket.emit('likeMovie', { roomId: room.code, userId: host.id, movie });
+        client2.emit('likeMovie', { roomId: room.code, userId: guest.id, movie });
+      });
+      client2.on('match', (matched) => {
+        expect(matched.key).toBe('42');
+        client2.disconnect();
+        done();
+      });
+    });
+  });
+
   it('should emit roomNotFound if room does not exist', (done) => {
     const user: User = { id: '1', name: 'test' };
     clientSocket.emit('joinRoom', { roomCode: 'non-existent-room', user });
     clientSocket.on('roomNotFound', () => {
       done();
     });
+  });
+
+  it('leaves a room by code and keeps the curated lobby', (done) => {
+    const room = roomManager.createCuratedLobby('BOO', 'http://plex', 'secret');
+    clientSocket.once('userJoined', () => {
+      clientSocket.once('userLeft', (updated) => {
+        expect(updated.users).toEqual([]);
+        expect(roomManager.getRoomByCode('BOO')).toBe(room);
+        expect(JSON.stringify(updated)).not.toContain('secret');
+        done();
+      });
+      clientSocket.emit('leaveRoom', { roomId: room.code, userId: 'guest' });
+    });
+    clientSocket.emit('joinRoom', { roomCode: room.code, user: { id: 'guest', name: 'Guest' } });
+  });
+
+  it('removes a disconnected user only after their last socket disconnects', (done) => {
+    const room = roomManager.createCuratedLobby('BATS', 'http://plex', 'secret');
+    const second = Client(`http://localhost:${port}`) as ClientSocket<ServerToClientEvents, ClientToServerEvents>;
+    const third = Client(`http://localhost:${port}`) as ClientSocket<ServerToClientEvents, ClientToServerEvents>;
+    const guest = { id: 'guest', name: 'Guest' };
+    const finish = (error?: Error) => {
+      second.disconnect();
+      third.disconnect();
+      done(error);
+    };
+
+    clientSocket.once('userJoined', () => {
+      second.emit('joinRoom', { roomCode: room.code, user: guest }); // buffered until connected
+      clientSocket.once('userJoined', () => {
+        third.emit('joinRoom', { roomCode: room.code, user: guest }); // buffered until connected
+        clientSocket.once('userJoined', () => {
+          second.disconnect();
+          setTimeout(() => {
+            try {
+              expect(room.users.map(user => user.id)).toEqual(['observer', 'guest']);
+              clientSocket.once('userLeft', (updated) => {
+                try {
+                  expect(updated.users.map(user => user.id)).toEqual(['observer']);
+                  expect(room.users.map(user => user.id)).toEqual(['observer']);
+                  finish();
+                } catch (error) { finish(error as Error); }
+              });
+              third.disconnect();
+            } catch (error) { finish(error as Error); }
+          }, 50);
+        });
+      });
+    });
+    clientSocket.emit('joinRoom', { roomCode: room.code, user: { id: 'observer', name: 'Observer' } });
+  });
+
+  it('survives malformed payloads', (done) => {
+    const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const raw = clientSocket as unknown as { emit: (event: string, payload?: unknown) => void };
+    raw.emit('likeMovie', { roomId: 'BOO', userId: 'x' });
+    raw.emit('likeMovie', null);
+    raw.emit('joinRoom', { roomCode: 'BOO' });
+    raw.emit('leaveRoom', { roomId: 42, userId: 'x' });
+    clientSocket.emit('joinRoom', { roomCode: 'non-existent-room', user: { id: '1', name: 'test' } });
+    clientSocket.once('roomNotFound', () => { errors.mockRestore(); done(); }); // still alive and answering
   });
 });

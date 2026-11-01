@@ -45,6 +45,12 @@ describe('RoomManager', () => {
       expect(updatedRoom?.users[1]).toEqual(user2);
     });
 
+    it('renames a user who re-joins with a new name', () => {
+      const room = roomManager.createRoom(mockCreateRoomPayload({ id: '1', name: 'Old' }));
+      roomManager.joinRoom(room.code, { id: '1', name: 'New' });
+      expect(room.users).toEqual([{ id: '1', name: 'New' }]);
+    });
+
     it('should return null if the room does not exist', () => {
       const user: User = { id: '1', name: 'test' };
       const result = roomManager.joinRoom('non-existent-room', user);
@@ -54,6 +60,40 @@ describe('RoomManager', () => {
   });
 
   describe('leaveRoom', () => {
+    it('matches saved likes when a holdout leaves, only once', () => {
+      const room = roomManager.createCuratedLobby('BOO', 'http://plex', 'secret');
+      for (const id of ['a', 'b', 'c']) roomManager.joinRoom('BOO', { id, name: id });
+      const movie = { key: '42', title: 'Heat' };
+      roomManager.addLikedMovie(room.id, movie, 'a');
+      roomManager.addLikedMovie(room.id, movie, 'b');
+      expect(room.likedMovies).toEqual([]);
+
+      roomManager.leaveRoom(room.id, 'c');
+      expect(roomManager.recheckMatches(room.id)).toEqual([movie]);
+      expect(roomManager.recheckMatches(room.id)).toEqual([]);
+      expect(room.likedMovies).toEqual([movie]);
+      expect(room).not.toHaveProperty('likedMovieDetails');
+      expect(room).not.toHaveProperty('plexToken');
+    });
+
+    it('keeps a curated lobby, and its Plex session once a deck has loaded', () => {
+      const room = roomManager.createCuratedLobby('BOO', 'http://plex', 'first');
+      const session = roomManager.getPlexSession(room.id)!;
+      session.deck = Promise.resolve([]);
+      roomManager.joinRoom('BOO', { id: 'guest', name: 'Guest' });
+      roomManager.leaveRoom(room.id, 'guest');
+
+      expect(roomManager.getRoomByCode('BOO')).toBe(room);
+      expect(room.users).toEqual([]);
+      expect(room).not.toHaveProperty('plexToken');
+      expect(roomManager.createCuratedLobby('BOO', 'http://new-plex', 'second')).toBe(room);
+      expect(roomManager.getPlexSession(room.id)).toBe(session); // a loaded deck keeps its session
+
+      session.deck = undefined; // a failed load clears the deck
+      roomManager.createCuratedLobby('BOO', 'http://new-plex', 'second');
+      expect(roomManager.getPlexSession(room.id)).toEqual({ plexUrl: 'http://new-plex', plexToken: 'second' });
+    });
+
     it('should remove a user from an existing room', () => {
       const user1: User = { id: '1', name: 'test1' };
       const user2: User = { id: '2', name: 'test2' };

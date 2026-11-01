@@ -26,22 +26,10 @@ const LoginPage: React.FC = () => {
       const response = await axios.post<{ id: number; code: string }>(`${backendUrl}/api/auth/plex/pin`);
       const { id, code } = response.data;
 
-      const plexAuthUrl = `https://app.plex.tv/auth#?clientID=tindarr&code=${code}&context[device][product]=Tindarr&context[device][platform]=Web&context[device][device]=Web&context[device][version]=1.0&forwardUrl=${window.location.origin}/auth/callback?pinId=${id}`;
-      window.open(plexAuthUrl, '_blank');
-
-      const pollForToken = async () => {
-        const tokenResponse = await axios.get<{ authToken: string }>(`${backendUrl}/api/auth/plex/token/${id}`);
-        if (tokenResponse.data.authToken) {
-          localStorage.setItem('plexToken', tokenResponse.data.authToken);
-          // Use VITE_PLEX_URL if available, otherwise fallback to hardcoded or user input
-          localStorage.setItem('plexUrl', import.meta.env.VITE_PLEX_URL || 'http://localhost:32400');
-          navigate('/create-room');
-        } else {
-          setTimeout(pollForToken, 2000); // Poll every 2 seconds
-        }
-      };
-
-      setTimeout(pollForToken, 2000); // Start polling after 2 seconds
+      const plexAuthUrl = `https://app.plex.tv/auth#?clientID=tindarr&code=${code}&context[device][product]=Tindarr&context[device][platform]=Web&context[device][device]=Web&context[device][version]=1.0&forwardUrl=${encodeURIComponent(`${window.location.origin}/auth/callback?pinId=${id}`)}`;
+      // Same-tab redirect: a popup becomes a separate tab on phones, stranding the user
+      // there while the app continues in the tab behind it. AuthCallback finishes login.
+      window.location.href = plexAuthUrl;
     } catch (err) {
       console.error('Plex login failed:', err);
       setError('Failed to initiate Plex login. Please try again.');

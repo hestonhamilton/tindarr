@@ -8,6 +8,7 @@ import { usePlexContentRatings } from '../hooks/usePlexContentRatings';
 import { Library, SelectedLibrary } from '../types';
 import { useSocket } from '../hooks/useSocket'; // Import useSocket
 import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
 
 // Define sorting options
 const SORT_OPTIONS = [
@@ -38,6 +39,8 @@ const CreateRoomPage: React.FC = () => {
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [showAllContentRatings, setShowAllContentRatings] = useState(false);
   const [sortOrder, setSortOrder] = useState<string>(SORT_OPTIONS[0].value); // New state for sort order
+  const [halloweenOpening, setHalloweenOpening] = useState(false);
+  const [halloweenError, setHalloweenError] = useState('');
   const socket = useSocket(); // Establish socket connection
 
   // Effect to listen for roomCreated event
@@ -182,6 +185,9 @@ const CreateRoomPage: React.FC = () => {
         durationMax: durationMax ? parseInt(durationMax, 10) * 60 * 1000 : undefined, // Convert minutes to milliseconds
         selectedContentRatings: selectedContentRatings,
         sortOrder: sortOrder,
+        // Lets the server load the deck and posters for guests without a Plex login
+        plexUrl: localStorage.getItem('plexUrl') || undefined,
+        plexToken: localStorage.getItem('plexToken') || undefined,
       });
     } else {
       alert('Please enter your name to create a room.');
@@ -199,20 +205,36 @@ const CreateRoomPage: React.FC = () => {
     navigate(`/room/${roomCodeInput}`);
   };
 
+  const openHalloweenLobby = async () => {
+    setHalloweenOpening(true);
+    setHalloweenError('');
+    try {
+      const { data } = await axios.post<{ code: string }>('/api/rooms/curated/halloween', {
+        plexUrl: localStorage.getItem('plexUrl') || '',
+        plexToken: localStorage.getItem('plexToken') || '',
+      });
+      navigate(`/room/${data.code}?invite=1`);
+    } catch {
+      setHalloweenError('Could not open the lobby. Check your Plex connection or try again.');
+    } finally {
+      setHalloweenOpening(false);
+    }
+  };
+
   const genreContainerMaxHeight = showAllGenres ? 'none' : '150px';
   const contentRatingContainerMaxHeight = showAllContentRatings ? 'none' : '150px';
 
-  if (isLoadingLibraries) {
-    return <div>Loading libraries...</div>;
-  }
-
-  if (isErrorLibraries) {
-    return <div>Error loading libraries: {errorLibraries?.message}</div>;
-  }
-
   return (
     <div>
+      <section className='halloweenCreate'>
+        <span aria-hidden='true'>🎃</span>
+        <div><h2>Halloween Movie Night</h2><p>Open the shared lobby, then invite friends by QR.</p></div>
+        <button onClick={openHalloweenLobby} disabled={halloweenOpening} aria-label='Open Halloween lobby'>{halloweenOpening ? 'Opening…' : 'Open Halloween lobby'}</button>
+        {halloweenError && <p role='alert'>{halloweenError}</p>}
+      </section>
       <h1>Create New Room</h1>
+      {isLoadingLibraries && <p>Loading libraries...</p>}
+      {isErrorLibraries && <p>Error loading libraries: {errorLibraries?.message}</p>}
       <div>
         <label htmlFor="userName">Your Name:</label>
         <input
@@ -388,6 +410,4 @@ const CreateRoomPage: React.FC = () => {
 };
 
 export default CreateRoomPage;
-
-
 

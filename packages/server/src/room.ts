@@ -1,9 +1,17 @@
 import { Room, User, CreateRoomPayload, Movie } from './types'; // Import Movie
+
+export interface PlexSession {
+  plexUrl: string;
+  plexToken: string;
+  deck?: Promise<Movie[]>; // Fetched once so everyone swipes the same order
+}
 import crypto from 'crypto'; // Import crypto module
 
 export class RoomManager {
   private rooms: Map<string, Room> = new Map(); // Map by roomId (UUID)
   private roomCodes: Map<string, string> = new Map(); // Map roomCode to roomId
+  private plexSessions: Map<string, PlexSession> = new Map(); // roomId -> host's Plex creds
+  private likedMovieDetails: Map<string, Map<string, Movie>> = new Map(); // roomId -> movie key -> movie
 
   createRoom(payload: CreateRoomPayload): Room { // Changed parameter to payload
     const roomId = crypto.randomUUID(); // Use UUID for internal ID
@@ -26,16 +34,53 @@ export class RoomManager {
     };
     this.rooms.set(roomId, room);
     this.roomCodes.set(roomCode, roomId); // Store mapping
+    if (payload.plexUrl && payload.plexToken) {
+      this.plexSessions.set(roomId, { plexUrl: payload.plexUrl, plexToken: payload.plexToken });
+    }
+    return room;
+  }
+
+  createCuratedLobby(code: string, plexUrl: string, plexToken: string): Room {
+    const roomCode = code.toUpperCase();
+    const existing = this.getRoomByCode(roomCode);
+    if (existing) {
+      if (existing.curated !== 'halloween') throw new Error('Room code already in use.');
+      // Once a deck has loaded, people are swiping it: keep that session so nobody's order
+      // reshuffles and no one can swap the lobby's Plex creds mid-night. Before that (or after a
+      // failed load, which clears the deck) new creds replace the session, e.g. a host fixing a
+      // bad boot token by opening the lobby from Create Room.
+      const session = this.plexSessions.get(existing.id);
+      if (!session?.deck) {
+        this.plexSessions.set(existing.id, { plexUrl, plexToken });
+      }
+      return existing;
+    }
+
+    const room: Room = {
+      id: crypto.randomUUID(),
+      code: roomCode,
+      curated: 'halloween',
+      users: [],
+      selectedLibraries: [],
+      selectedGenres: [],
+      selectedContentRatings: [],
+      sortOrder: 'random',
+      likedMovies: [],
+      movieLikes: {},
+    };
+    this.rooms.set(room.id, room);
+    this.roomCodes.set(roomCode, room.id);
+    this.plexSessions.set(room.id, { plexUrl, plexToken });
     return room;
   }
 
   joinRoom(roomCode: string, user: User): Room | null { // Accepts roomCode
     const room = this.getRoomByCode(roomCode); // Find by code
     if (room) {
-      // Only add user if they are not already in the room
-      if (!room.users.some(existingUser => existingUser.id === user.id)) {
-        room.users.push(user);
-      }
+      // Only add user if they are not already in the room; a re-join with a new name renames them
+      const existing = room.users.find(existingUser => existingUser.id === user.id);
+      if (existing) existing.name = user.name;
+      else room.users.push(user);
       return room;
     }
     return null;
@@ -47,10 +92,12 @@ export class RoomManager {
       const userIndex = room.users.findIndex((user) => user.id === userId);
       if (userIndex > -1) {
         room.users.splice(userIndex, 1);
-        if (room.users.length === 0) {
+        if (room.users.length === 0 && !room.curated) {
           this.rooms.delete(roomId);
           // Remove code mapping when room is deleted
           this.roomCodes.delete(room.code);
+          this.plexSessions.delete(roomId);
+          this.likedMovieDetails.delete(roomId);
         }
         return room;
       }
@@ -62,8 +109,12 @@ export class RoomManager {
     return this.rooms.get(roomId);
   }
 
+  getPlexSession(roomId: string): PlexSession | undefined {
+    return this.plexSessions.get(roomId);
+  }
+
   getRoomByCode(code: string): Room | undefined {
-    const roomId = this.roomCodes.get(code);
+    const roomId = this.roomCodes.get(code.toUpperCase());
     if (roomId) {
       return this.rooms.get(roomId);
     }
@@ -73,6 +124,8 @@ export class RoomManager {
   addLikedMovie(roomId: string, movie: Movie, userId: string): Room | undefined { // Added userId
     const room = this.rooms.get(roomId);
     if (room) {
+      if (!this.likedMovieDetails.has(roomId)) this.likedMovieDetails.set(roomId, new Map());
+      this.likedMovieDetails.get(roomId)!.set(movie.key, movie);
       // Initialize movieLikes for this movie if it doesn't exist
       if (!room.movieLikes[movie.key]) {
         room.movieLikes[movie.key] = [];
@@ -97,6 +150,21 @@ export class RoomManager {
       return room;
     }
     return undefined;
+  }
+
+  recheckMatches(roomId: string): Movie[] {
+    const room = this.rooms.get(roomId);
+    if (!room || room.users.length < 2) return [];
+
+    const matches: Movie[] = [];
+    for (const [key, movie] of this.likedMovieDetails.get(roomId) ?? []) {
+      if (room.likedMovies.some(existing => existing.key === key)) continue;
+      if (room.users.every(user => room.movieLikes[key]?.includes(user.id))) {
+        room.likedMovies.push(movie);
+        matches.push(movie);
+      }
+    }
+    return matches;
   }
 
   private generateRoomCode(): string {

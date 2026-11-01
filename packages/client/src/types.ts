@@ -12,6 +12,7 @@ export interface User {
 export interface Room {
   id: string;
   code: string;
+  curated?: 'halloween';
   users: User[];
   // New fields for movie selection criteria
   selectedLibraries: SelectedLibrary[];
@@ -23,6 +24,7 @@ export interface Room {
   selectedContentRatings: string[];
   sortOrder: string;
   likedMovies: Movie[]; // Added
+  movieLikes: Record<string, string[]>;
 }
 
 export interface Movie {
@@ -58,6 +60,8 @@ export interface ClientToServerEvents {
     durationMax?: number;
     selectedContentRatings: string[];
     sortOrder: string;
+    plexUrl?: string;
+    plexToken?: string;
   }) => void;
   joinRoom: (payload: { roomCode: string; user: User }) => void;
   leaveRoom: (payload: { roomId: string; userId: string }) => void;
@@ -69,10 +73,18 @@ export interface ServerToClientEvents {
   roomCreated: (room: Room) => void; // Changed
   roomJoined: (room: Room) => void; // Changed
   userJoined: (room: Room) => void; // Changed
-  userLeft: (userId: string) => void;
+  userLeft: (room: Room) => void;
   movieLiked: (payload: { userId: string; movieId: string }) => void;
   movieDisliked: (payload: { userId: string; movieId: string }) => void;
   roomUpdated: (room: Room) => void; // Added
+  roomNotFound: () => void;
+  match: (movie: Movie) => void; // Everyone in the room liked this movie
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  product: string;
 }
 
 export interface SelectedLibrary {
