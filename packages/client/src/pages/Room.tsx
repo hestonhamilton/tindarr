@@ -196,7 +196,7 @@ const RoomPage: React.FC = () => {
     </section>}
 
     {isModalOpen && selectedMovie && <MovieDetailsModal movie={selectedMovie} onClose={() => setIsModalOpen(false)} plexUrl={plexUrl} plexToken={plexToken} plexServerId={plexServerId} posterSrc={posterSrc(roomCode, selectedMovie.posterUrl)} />}
-    {isInviteOpen && <InviteModal roomCode={roomState.code} onClose={() => setIsInviteOpen(false)} />}
+    {isInviteOpen && <InviteModal roomCode={roomState.code} halloween={halloween} onClose={() => setIsInviteOpen(false)} />}
     {match && <MatchOverlay roomCode={roomState.code} movie={match} onClose={() => setMatch(null)} />}
   </main>;
 };

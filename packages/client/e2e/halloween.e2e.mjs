@@ -106,6 +106,25 @@ async function main() {
       await shot(page, `02-lobby-${name}`);
     }
 
+    // The Invite QR (ghost style, logo in place) decodes to the lobby URL, and fits a 320px phone
+    {
+      const { page } = phones[0];
+      await page.getByRole('button', { name: /invite friends/i }).click();
+      const qr = page.getByTestId('invite-qr');
+      await qr.waitFor({ timeout: 5000 });
+      const qrPng = path.join(out, '07-invite-qr.png');
+      await qr.screenshot({ path: qrPng });
+      await fitsScreen(page, 'Ana invite', ['[data-testid="invite-qr"]']);
+      await shot(page, '07-invite-Ana');
+      // OpenCV is on the host already (its plain QRCodeDetector is built without a decoder here,
+      // so use the ZXing-based WeChat one); -I keeps the interpreter from importing anything local
+      const decode = spawnSync('python3', ['-I', '-c',
+        'import sys, cv2; print(next(iter(cv2.wechat_qrcode_WeChatQRCode().detectAndDecode(cv2.imread(sys.argv[1]))[0]), ""))', qrPng], { encoding: 'utf8' });
+      const decoded = decode.stdout.trim();
+      check(decoded === `${base}/room/BOO`, `invite QR decodes to the lobby URL (${decoded || decode.stderr.trim().split('\n').pop()})`);
+      await page.getByRole('button', { name: /close invite/i }).click();
+    }
+
     // Everyone sees the same shuffled deck
     const firstTitles = await Promise.all(phones.map(({ page }) => titleOf(page)));
     check(new Set(firstTitles).size === 1, `same first card for all (${firstTitles.join(' / ')})`);

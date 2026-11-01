@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { GHOST_SRC } from './ghost';
 
 interface InviteModalProps {
   roomCode: string;
+  halloween?: boolean;
   onClose: () => void;
 }
 
-const InviteModal: React.FC<InviteModalProps> = ({ roomCode, onClose }) => {
+const InviteModal: React.FC<InviteModalProps> = ({ roomCode, halloween = false, onClose }) => {
   const link = `${window.location.origin}/room/${roomCode}`;
   const [copied, setCopied] = useState(false);
 
@@ -19,8 +21,13 @@ const InviteModal: React.FC<InviteModalProps> = ({ roomCode, onClose }) => {
     <div className='overlay' onClick={onClose}>
       <div className='invite' onClick={(e) => e.stopPropagation()}>
         <h2>Scan to join</h2>
-        <div className='qr'>
-          <QRCodeSVG value={link} size={320} marginSize={2} />
+        <div className={`qr ${halloween ? 'qrGhost' : ''}`} data-testid='invite-qr'>
+          {halloween
+            // Dark on light with a light quiet zone so phone cameras read it on the dark card;
+            // level H absorbs the excavated ghost logo
+            ? <QRCodeSVG value={link} size={320} marginSize={4} level='H' fgColor='#251d32' bgColor='#fff3e8'
+                imageSettings={{ src: GHOST_SRC, width: 320 * 0.22, height: 320 * 0.22, excavate: true }} />
+            : <QRCodeSVG value={link} size={320} marginSize={2} />}
         </div>
         <p className='roomCode'>{roomCode}</p>
         <p className='inviteUrl'>{link}</p>
